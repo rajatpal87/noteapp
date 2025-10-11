@@ -64,11 +64,11 @@
             }
         }
 
-        // Global authentication functions
+
+        // Smart sign-in method that tries popup first, then redirect if popup fails
         window.signInWithGoogle = async () => {
             try {
                 if (!auth || !googleProvider) {
-                    console.log('🔄 Firebase not initialized, initializing now...');
                     const initialized = await initializeFirebase();
                     if (!initialized) {
                         throw new Error('Firebase not initialized');
@@ -77,40 +77,57 @@
                 
                 console.log('🔑 Attempting Google Sign-In...');
                 
-                const result = await signInWithPopup(auth, googleProvider);
-                const user = result.user;
-                
-                console.log('🔑 Sign-in successful, user details:', {
-                    uid: user.uid,
-                    email: user.email,
-                    name: user.displayName,
-                    emailVerified: user.emailVerified
-                });
-                
-                const idToken = await user.getIdToken();
-                console.log('🎫 ID Token obtained:', idToken.substring(0, 20) + '...');
-                
-                localStorage.setItem('firebaseToken', idToken);
-                localStorage.setItem('user', JSON.stringify({
-                    uid: user.uid,
-                    email: user.email,
-                    name: user.displayName,
-                    picture: user.photoURL
-                }));
+                // Try popup first
+                try {
+                    const result = await signInWithPopup(auth, googleProvider);
+                    const user = result.user;
+                    
+                    console.log('🔑 Sign-in successful, user details:', {
+                        uid: user.uid,
+                        email: user.email,
+                        name: user.displayName,
+                        emailVerified: user.emailVerified
+                    });
+                    
+                    const idToken = await user.getIdToken();
+                    console.log('🎫 ID Token obtained:', idToken.substring(0, 20) + '...');
+                    
+                    localStorage.setItem('firebaseToken', idToken);
+                    localStorage.setItem('user', JSON.stringify({
+                        uid: user.uid,
+                        email: user.email,
+                        name: user.displayName,
+                        picture: user.photoURL
+                    }));
 
-                console.log('💾 User data stored in localStorage');
-                showAuthenticatedUI(user);
-                loadNotes();
-                showMessage('Successfully signed in!', 'success');
-
+                    console.log('💾 User data stored in localStorage');
+                    showAuthenticatedUI(user);
+                    loadNotes();
+                    showMessage('Successfully signed in!', 'success');
+                    
+                } catch (popupError) {
+                    console.log('Popup sign-in failed, trying redirect method...', popupError.code);
+                    
+                    // If popup fails, try redirect
+                    showMessage('Popup blocked or closed. Redirecting to Google sign-in...', 'info');
+                    
+                    // Import signInWithRedirect
+                    const { signInWithRedirect } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js');
+                    await signInWithRedirect(auth, googleProvider);
+                }
+                
             } catch (error) {
                 console.error('Google sign-in error:', error);
                 
                 // Handle specific error cases
-                if (error.code === 'auth/popup-closed-by-user') {
-                    showMessage('Sign-in cancelled. Please try again.', 'info');
-                } else if (error.code === 'auth/popup-blocked') {
-                    showMessage('Popup blocked by browser. Please allow popups and try again.', 'error');
+                if (error.code === 'auth/popup-blocked') {
+                    showMessage('Popup blocked by browser. Redirecting to Google sign-in...', 'info');
+                    try {
+                        const { signInWithRedirect } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js');
+                        await signInWithRedirect(auth, googleProvider);
+                    } catch (redirectError) {
+                        showMessage('Sign-in failed: ' + redirectError.message, 'error');
+                    }
                 } else if (error.code === 'auth/cancelled-popup-request') {
                     showMessage('Sign-in cancelled. Please wait and try again.', 'info');
                 } else if (error.code === 'auth/api-key-not-valid') {
@@ -118,28 +135,6 @@
                 } else {
                     showMessage('Sign-in failed: ' + error.message, 'error');
                 }
-            }
-        };
-
-        // Alternative sign-in method using redirect (for popup blockers)
-        window.signInWithGoogleRedirect = async () => {
-            try {
-                if (!auth || !googleProvider) {
-                    const initialized = await initializeFirebase();
-                    if (!initialized) {
-                        throw new Error('Firebase not initialized');
-                    }
-                }
-                
-                showMessage('Redirecting to Google sign-in...', 'info');
-                
-                // Import signInWithRedirect
-                const { signInWithRedirect } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js');
-                await signInWithRedirect(auth, googleProvider);
-                
-            } catch (error) {
-                console.error('Google redirect sign-in error:', error);
-                showMessage('Redirect sign-in failed: ' + error.message, 'error');
             }
         };
 
@@ -218,6 +213,30 @@
                 const urlParams = new URLSearchParams(window.location.search);
                 const isRedirect = urlParams.get('redirect') === 'true';
                 console.log('🔄 Is redirect from Google:', isRedirect);
+                
+                // Handle redirect result if needed
+                if (auth && !localStorage.getItem('firebaseToken')) {
+                    try {
+                        const { getRedirectResult } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js');
+                        const redirectResult = await getRedirectResult(auth);
+                        if (redirectResult && redirectResult.user) {
+                            console.log('🔄 Redirect sign-in successful:', redirectResult.user.email);
+                            const idToken = await redirectResult.user.getIdToken();
+                            localStorage.setItem('firebaseToken', idToken);
+                            localStorage.setItem('user', JSON.stringify({
+                                uid: redirectResult.user.uid,
+                                email: redirectResult.user.email,
+                                name: redirectResult.user.displayName,
+                                picture: redirectResult.user.photoURL
+                            }));
+                            showAuthenticatedUI(redirectResult.user);
+                            loadNotes();
+                            showMessage('Successfully signed in!', 'success');
+                        }
+                    } catch (redirectError) {
+                        console.log('No redirect result or error:', redirectError);
+                    }
+                }
                 
                 const token = localStorage.getItem('firebaseToken');
                 const user = localStorage.getItem('user');
@@ -681,30 +700,19 @@
         <!-- Authentication Section -->
                 <div id="auth-section" class="auth-container hidden">
                     <h2>🔐 Sign In Required</h2>
-                    <p>Please sign in with your Google account to access your notes</p>
-                    <div style="display: flex; flex-direction: column; gap: 15px; align-items: center;">
-                        <button class="google-signin-btn" onclick="signInWithGoogle()">
-                            <svg width="20" height="20" viewBox="0 0 24 24">
-                                <path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-                                <path fill="currentColor" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-                                <path fill="currentColor" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
-                                <path fill="currentColor" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
-                            </svg>
-                            Sign in with Google (Popup)
-                        </button>
-                        <button class="google-signin-btn" onclick="signInWithGoogleRedirect()" style="background: #34a853;">
-                            <svg width="20" height="20" viewBox="0 0 24 24">
-                                <path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-                                <path fill="currentColor" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-                                <path fill="currentColor" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
-                                <path fill="currentColor" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
-                            </svg>
-                            Sign in with Google (Redirect)
-                        </button>
-                        <p style="font-size: 0.9rem; color: #666; text-align: center; margin-top: 10px;">
-                            If popups are blocked, use the redirect option
-                        </p>
-                    </div>
+                    <p>Please sign in with your Google account to access your personal notes</p>
+                    <button class="google-signin-btn" onclick="signInWithGoogle()">
+                        <svg width="20" height="20" viewBox="0 0 24 24">
+                            <path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                            <path fill="currentColor" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                            <path fill="currentColor" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                            <path fill="currentColor" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                        </svg>
+                        Sign in with Google
+                    </button>
+                    <p style="font-size: 0.9rem; color: #666; text-align: center; margin-top: 15px;">
+                        Automatically handles popup and redirect methods
+                    </p>
                 </div>
 
         <!-- User Info Section -->
