@@ -84,29 +84,35 @@
                         console.log('🔑 Testing with mock authentication...');
                         showMessage('Testing authentication...', 'info');
                         
+                        // Use a consistent timestamp for user ID and token
+                        const timestamp = Date.now();
+                        
                         // Create a mock user for testing
                         const mockUser = {
-                            uid: 'test-user-' + Date.now(),
+                            uid: 'test-user-' + timestamp,
                             email: 'test@example.com',
                             displayName: 'Test User',
                             photoURL: 'https://via.placeholder.com/40'
                         };
                         
-                        // Create a mock token
-                        const mockToken = 'mock-token-' + Date.now();
+                        // Create a mock token with same timestamp
+                        const mockToken = 'mock-token-' + timestamp;
                         
                         console.log('👤 Mock user created:', mockUser);
+                        console.log('🎫 Mock token created:', mockToken);
                         
-                        // Store mock authentication data
+                        // Store mock authentication data with longer expiration
                         localStorage.setItem('firebaseToken', mockToken);
                         localStorage.setItem('user', JSON.stringify(mockUser));
+                        localStorage.setItem('authExpiry', (Date.now() + 24 * 60 * 60 * 1000).toString()); // 24 hours
                         
                         // Store test attempt in localStorage
                         localStorage.setItem('debug_mock_auth_attempt', JSON.stringify({
                             timestamp: new Date().toISOString(),
                             method: 'mock_auth',
                             mockUser: mockUser,
-                            mockToken: mockToken
+                            mockToken: mockToken,
+                            expiry: Date.now() + 24 * 60 * 60 * 1000
                         }));
                         
                         console.log('✅ Mock authentication successful!');
@@ -452,24 +458,34 @@ Redirect Result: ${debugInfo.redirectResult || 'Not found'}
                         console.log('🔔 Setting up auth listener...');
                         setupAuthStateListener();
                         
-                        // Check for existing credentials
+                        // Check for existing credentials with expiry
                         const token = localStorage.getItem('firebaseToken');
                         const user = localStorage.getItem('user');
+                        const expiry = localStorage.getItem('authExpiry');
                         
                         console.log('🔍 Local storage check:', {
                             hasToken: !!token,
                             hasUser: !!user,
+                            hasExpiry: !!expiry,
                             tokenPreview: token ? token.substring(0, 20) + '...' : 'none',
-                            userData: user ? JSON.parse(user) : 'none'
+                            userData: user ? JSON.parse(user) : 'none',
+                            expiryTime: expiry ? new Date(parseInt(expiry)).toISOString() : 'none',
+                            isExpired: expiry ? Date.now() > parseInt(expiry) : true
                         });
                         
-                        if (token && user) {
-                            console.log('🔑 Found stored credentials, showing authenticated UI...');
+                        if (token && user && expiry && Date.now() < parseInt(expiry)) {
+                            console.log('🔑 Found valid stored credentials, showing authenticated UI...');
                             const userData = JSON.parse(user);
                             showAuthenticatedUI(userData);
                             loadNotes();
                         } else {
-                            console.log('❌ No stored credentials, showing unauthenticated UI...');
+                            console.log('❌ No valid stored credentials, showing unauthenticated UI...');
+                            if (expiry && Date.now() > parseInt(expiry)) {
+                                console.log('🔍 Authentication expired, clearing storage...');
+                                localStorage.removeItem('firebaseToken');
+                                localStorage.removeItem('user');
+                                localStorage.removeItem('authExpiry');
+                            }
                             showUnauthenticatedUI();
                         }
             } else {
