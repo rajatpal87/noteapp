@@ -827,11 +827,31 @@
 
         // Authentication UI Helper Functions
         function showAuthenticatedUI(user) {
-            document.getElementById('auth-section').classList.add('hidden');
-            document.getElementById('user-section').classList.remove('hidden');
-            document.querySelector('.main-content').classList.remove('hidden');
-            document.querySelector('.stats').classList.remove('hidden');
+            console.log('🔐 showAuthenticatedUI called with user:', user);
+            const authSection = document.getElementById('auth-section');
+            const userSection = document.getElementById('user-section');
+            const mainContent = document.querySelector('.main-content');
+            const stats = document.querySelector('.stats');
             
+            console.log('🔍 Before UI changes:', {
+                authHidden: authSection ? authSection.classList.contains('hidden') : 'N/A',
+                userHidden: userSection ? userSection.classList.contains('hidden') : 'N/A',
+                mainHidden: mainContent ? mainContent.classList.contains('hidden') : 'N/A',
+                statsHidden: stats ? stats.classList.contains('hidden') : 'N/A'
+            });
+            
+            authSection.classList.add('hidden');
+            userSection.classList.remove('hidden');
+            mainContent.classList.remove('hidden');
+            stats.classList.remove('hidden');
+            
+            console.log('🔍 After UI changes:', {
+                authHidden: authSection.classList.contains('hidden'),
+                userHidden: userSection.classList.contains('hidden'),
+                mainHidden: mainContent.classList.contains('hidden'),
+                statsHidden: stats.classList.contains('hidden')
+            });
+
             // Update user info
             document.getElementById('user-name').textContent = user.name || user.displayName || 'User';
             document.getElementById('user-email').textContent = user.email;
@@ -839,11 +859,31 @@
         }
 
         function showUnauthenticatedUI() {
-            document.getElementById('auth-section').classList.remove('hidden');
-            document.getElementById('user-section').classList.add('hidden');
-            document.querySelector('.main-content').classList.add('hidden');
-            document.querySelector('.stats').classList.add('hidden');
+            console.log('🔓 showUnauthenticatedUI called');
+            const authSection = document.getElementById('auth-section');
+            const userSection = document.getElementById('user-section');
+            const mainContent = document.querySelector('.main-content');
+            const stats = document.querySelector('.stats');
             
+            console.log('🔍 Before UI changes:', {
+                authHidden: authSection ? authSection.classList.contains('hidden') : 'N/A',
+                userHidden: userSection ? userSection.classList.contains('hidden') : 'N/A',
+                mainHidden: mainContent ? mainContent.classList.contains('hidden') : 'N/A',
+                statsHidden: stats ? stats.classList.contains('hidden') : 'N/A'
+            });
+            
+            authSection.classList.remove('hidden');
+            userSection.classList.add('hidden');
+            mainContent.classList.add('hidden');
+            stats.classList.add('hidden');
+            
+            console.log('🔍 After UI changes:', {
+                authHidden: authSection.classList.contains('hidden'),
+                userHidden: userSection.classList.contains('hidden'),
+                mainHidden: mainContent.classList.contains('hidden'),
+                statsHidden: stats.classList.contains('hidden')
+            });
+
             // Clear notes
             notes = [];
             renderNotes();
