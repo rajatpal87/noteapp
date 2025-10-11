@@ -303,17 +303,6 @@ try {
     }
     process.exit(1);
   });
-} catch (error) {
-  console.error('❌ Failed to start server:', error);
-  process.exit(1);
-}
 
-// Handle server errors
-server.on('error', (err) => {
-  console.error('Server error:', err);
-  if (err.code === 'EADDRINUSE') {
-    console.error(`Port ${PORT} is already in use. Try a different port.`);
-  }
-});
 
 module.exports = app;
