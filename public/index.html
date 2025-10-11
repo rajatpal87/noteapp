@@ -84,19 +84,20 @@
                         console.log('🔑 Testing with mock authentication...');
                         showMessage('Testing authentication...', 'info');
                         
-                        // Use a consistent timestamp for user ID and token
-                        const timestamp = Date.now();
+                        // Use a FIXED user ID and token for testing (works with current backend)
+                        const fixedUserId = 'test-user-fixed';
+                        const fixedToken = 'mock-token-fixed';
                         
                         // Create a mock user for testing
                         const mockUser = {
-                            uid: 'test-user-' + timestamp,
+                            uid: fixedUserId,
                             email: 'test@example.com',
                             displayName: 'Test User',
                             photoURL: 'https://via.placeholder.com/40'
                         };
                         
-                        // Create a mock token with same timestamp
-                        const mockToken = 'mock-token-' + timestamp;
+                        // Create a mock token with fixed value
+                        const mockToken = fixedToken;
                         
                         console.log('👤 Mock user created:', mockUser);
                         console.log('🎫 Mock token created:', mockToken);
