@@ -1290,44 +1290,68 @@ Redirect Result: ${debugInfo.redirectResult || 'Not found'}
         }
 
         // Handle form submission
-        document.getElementById('note-form').addEventListener('submit', async function(e) {
-            e.preventDefault();
-            
-            const title = document.getElementById('note-title').value.trim();
-            const content = document.getElementById('note-content').value.trim();
-            
-            if (!title || !content) {
-                showMessage('Please fill in both title and content', 'error');
+        function setupFormSubmission() {
+            const form = document.getElementById('note-form');
+            if (!form) {
+                console.error('❌ Note form not found!');
                 return;
             }
-
-            try {
-                const token = localStorage.getItem('firebaseToken');
-                const url = editingNoteId ? `/api/notes/${editingNoteId}` : '/api/notes';
-                const method = editingNoteId ? 'PUT' : 'POST';
+            
+            console.log('✅ Setting up form submission handler...');
+            
+            form.addEventListener('submit', async function(e) {
+                console.log('📝 Form submission triggered!');
+                e.preventDefault();
                 
-                const response = await fetch(url, {
-                    method: method,
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
-                    },
-                    body: JSON.stringify({ title, content })
-                });
+                const title = document.getElementById('note-title').value.trim();
+                const content = document.getElementById('note-content').value.trim();
                 
-                const result = await response.json();
+                console.log('📝 Form data:', { title, content, editingNoteId });
                 
-                if (result.success) {
-                    const message = editingNoteId ? 'Note updated successfully!' : 'Note created successfully!';
-                    showMessage(message, 'success');
-                    loadNotes();
-                    cancelEdit();
-                } else {
-                    showMessage('Error saving note: ' + result.error, 'error');
+                if (!title || !content) {
+                    showMessage('Please fill in both title and content', 'error');
+                    return;
                 }
-            } catch (error) {
-                showMessage('Failed to save note: ' + error.message, 'error');
-            }
+
+                try {
+                    console.log('📝 Starting note creation/update...');
+                    const token = localStorage.getItem('firebaseToken');
+                    const url = editingNoteId ? `/api/notes/${editingNoteId}` : '/api/notes';
+                    const method = editingNoteId ? 'PUT' : 'POST';
+                    
+                    console.log('📝 API request:', { url, method, token: token ? 'present' : 'missing' });
+                    
+                    const response = await fetch(url, {
+                        method: method,
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        },
+                        body: JSON.stringify({ title, content })
+                    });
+                    
+                    console.log('📝 API response status:', response.status);
+                    const result = await response.json();
+                    console.log('📝 API response:', result);
+                    
+                    if (result.success) {
+                        const message = editingNoteId ? 'Note updated successfully!' : 'Note created successfully!';
+                        showMessage(message, 'success');
+                        loadNotes();
+                        cancelEdit();
+                    } else {
+                        showMessage('Error saving note: ' + result.error, 'error');
+                    }
+                } catch (error) {
+                    console.error('❌ Form submission error:', error);
+                    showMessage('Failed to save note: ' + error.message, 'error');
+                }
+            });
+        }
+        
+        // Set up form submission when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            setupFormSubmission();
         });
 
         // Update statistics
