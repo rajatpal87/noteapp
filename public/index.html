@@ -65,28 +65,31 @@
         }
 
 
-        // Smart sign-in method that tries popup first, then redirect if popup fails
-        window.signInWithGoogle = async () => {
-            console.log('🎯 signInWithGoogle function called!');
-            try {
-                if (!auth || !googleProvider) {
-                    console.log('🔄 Firebase not initialized, initializing now...');
-                    const initialized = await initializeFirebase();
-                    if (!initialized) {
-                        throw new Error('Firebase not initialized');
-                    }
-                }
-                
-                console.log('🔑 Attempting Google Sign-In with popup...');
-                console.log('🔍 Auth object:', auth);
-                console.log('🔍 Google provider:', googleProvider);
-                
-                // Try popup first
-                try {
-                    console.log('🚀 Calling signInWithPopup...');
-                    const result = await signInWithPopup(auth, googleProvider);
-                    console.log('✅ signInWithPopup returned result:', result);
-                    const user = result.user;
+                // Smart sign-in method that tries popup first, then redirect if popup fails
+                window.signInWithGoogle = async () => {
+                    console.log('🎯 signInWithGoogle function called!');
+                    console.log('🔍 Current auth state:', auth ? 'Auth exists' : 'No auth');
+                    console.log('🔍 Current provider state:', googleProvider ? 'Provider exists' : 'No provider');
+                    
+                    try {
+                        if (!auth || !googleProvider) {
+                            console.log('🔄 Firebase not initialized, initializing now...');
+                            const initialized = await initializeFirebase();
+                            if (!initialized) {
+                                throw new Error('Firebase not initialized');
+                            }
+                        }
+                        
+                        console.log('🔑 Attempting Google Sign-In with popup...');
+                        console.log('🔍 Auth object after init:', auth);
+                        console.log('🔍 Google provider after init:', googleProvider);
+                        
+                        // Try popup first
+                        try {
+                            console.log('🚀 Calling signInWithPopup...');
+                            const result = await signInWithPopup(auth, googleProvider);
+                            console.log('✅ signInWithPopup returned result:', result);
+                            const user = result.user;
                     
                     console.log('🔑 Popup sign-in successful, user details:', {
                         uid: user.uid,
@@ -112,26 +115,30 @@
                     showMessage('Successfully signed in!', 'success');
                     return; // Exit successfully
                     
-                } catch (popupError) {
-                    console.log('❌ Popup sign-in failed:', popupError.code, popupError.message);
-                    
-                    // Only try redirect for specific popup errors
-                    if (popupError.code === 'auth/popup-blocked' || 
-                        popupError.code === 'auth/popup-closed-by-user' ||
-                        popupError.code === 'auth/cancelled-popup-request') {
-                        
-                        console.log('🔄 Trying redirect method as fallback...');
-                        showMessage('Popup blocked or closed. Redirecting to Google sign-in...', 'info');
-                        
-                        // Import signInWithRedirect
-                        const { signInWithRedirect } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js');
-                        await signInWithRedirect(auth, googleProvider);
-                        return; // Exit after redirect
-                    } else {
-                        // For other errors, don't try redirect
-                        throw popupError;
-                    }
-                }
+                        } catch (popupError) {
+                            console.log('❌ Popup sign-in failed:', popupError.code, popupError.message);
+                            console.log('🔍 Full popup error:', popupError);
+                            
+                            // Only try redirect for specific popup errors
+                            if (popupError.code === 'auth/popup-blocked' || 
+                                popupError.code === 'auth/popup-closed-by-user' ||
+                                popupError.code === 'auth/cancelled-popup-request') {
+                                
+                                console.log('🔄 Trying redirect method as fallback...');
+                                showMessage('Popup blocked or closed. Redirecting to Google sign-in...', 'info');
+                                
+                                // Import signInWithRedirect
+                                const { signInWithRedirect } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js');
+                                console.log('🔄 About to call signInWithRedirect...');
+                                await signInWithRedirect(auth, googleProvider);
+                                console.log('🔄 signInWithRedirect called, should redirect now');
+                                return; // Exit after redirect
+                            } else {
+                                // For other errors, don't try redirect
+                                console.log('❌ Not trying redirect for error:', popupError.code);
+                                throw popupError;
+                            }
+                        }
                 
             } catch (error) {
                 console.error('❌ Google sign-in error:', error);
