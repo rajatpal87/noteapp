@@ -635,13 +635,13 @@
                         setupAuthStateListener();
                         
                         // Check if we're coming back from a redirect
-                        const urlParams = new URLSearchParams(window.location.search);
-                        const isRedirect = urlParams.has('redirect') || 
+                        const urlParams2 = new URLSearchParams(window.location.search);
+                        const isRedirect2 = urlParams2.has('redirect') || 
                                          window.location.href.includes('auth') ||
                                          window.location.href.includes('google');
                         
                         console.log('🔍 Redirect detection:', {
-                            isRedirect: isRedirect,
+                            isRedirect: isRedirect2,
                             url: window.location.href,
                             searchParams: window.location.search
                         });
