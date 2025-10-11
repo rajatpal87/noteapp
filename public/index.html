@@ -1168,6 +1168,10 @@ Redirect Result: ${debugInfo.redirectResult || 'Not found'}
                         console.log('🔍 Request URL: /api/notes');
                         console.log('🔍 Request method: GET');
                         console.log('🔍 Authorization header:', `Bearer ${token.substring(0, 50)}...`);
+                        console.log('🔍 Token details:', { 
+                            token: token, 
+                            userId: token ? token.replace('mock-token-', 'test-user-') : 'none' 
+                        });
                         
                         const response = await fetch('/api/notes', {
                             headers: {
@@ -1336,6 +1340,10 @@ Redirect Result: ${debugInfo.redirectResult || 'Not found'}
                     const method = editingNoteId ? 'PUT' : 'POST';
                     
                     console.log('📝 API request:', { url, method, token: token ? 'present' : 'missing' });
+                    console.log('📝 Token details:', { 
+                        token: token, 
+                        userId: token ? token.replace('mock-token-', 'test-user-') : 'none' 
+                    });
                     
                     const response = await fetch(url, {
                         method: method,
