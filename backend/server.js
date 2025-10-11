@@ -4,6 +4,7 @@ const helmet = require('helmet');
 const morgan = require('morgan');
 const path = require('path');
 const database = require('./database');
+const { verifyFirebaseToken, isFirebaseConfigured } = require('./firebase');
 require('dotenv').config();
 
 const app = express();
@@ -64,6 +65,7 @@ app.get('/api/health', async (req, res) => {
       uptime: process.uptime(),
       timestamp: new Date().toISOString(),
       database: dbStatus,
+      firebase: { configured: isFirebaseConfigured() },
       totalNotes: totalNotes
     });
   } catch (error) {
@@ -72,14 +74,24 @@ app.get('/api/health', async (req, res) => {
       uptime: process.uptime(),
       timestamp: new Date().toISOString(),
       database: dbStatus,
+      firebase: { configured: isFirebaseConfigured() },
       totalNotes: 0,
       warning: 'Could not get notes count'
     });
   }
 });
 
-// GET /api/notes - Get all notes
-app.get('/api/notes', async (req, res) => {
+// Authentication status endpoint
+app.get('/api/auth/status', (req, res) => {
+  res.json({
+    success: true,
+    firebaseConfigured: isFirebaseConfigured(),
+    authenticationRequired: true
+  });
+});
+
+// GET /api/notes - Get all notes (Protected)
+app.get('/api/notes', verifyFirebaseToken, async (req, res) => {
   try {
     const notes = await database.getAllNotes();
     res.json({
@@ -98,8 +110,8 @@ app.get('/api/notes', async (req, res) => {
   }
 });
 
-// GET /api/notes/:id - Get a specific note
-app.get('/api/notes/:id', async (req, res) => {
+// GET /api/notes/:id - Get a specific note (Protected)
+app.get('/api/notes/:id', verifyFirebaseToken, async (req, res) => {
   try {
     const note = await database.getNoteById(req.params.id);
     res.json({
@@ -122,8 +134,8 @@ app.get('/api/notes/:id', async (req, res) => {
   }
 });
 
-// POST /api/notes - Create a new note
-app.post('/api/notes', async (req, res) => {
+// POST /api/notes - Create a new note (Protected)
+app.post('/api/notes', verifyFirebaseToken, async (req, res) => {
   try {
     const { title, content } = req.body;
     
@@ -152,8 +164,8 @@ app.post('/api/notes', async (req, res) => {
   }
 });
 
-// PUT /api/notes/:id - Update a note
-app.put('/api/notes/:id', async (req, res) => {
+// PUT /api/notes/:id - Update a note (Protected)
+app.put('/api/notes/:id', verifyFirebaseToken, async (req, res) => {
   try {
     const { title, content } = req.body;
 
@@ -188,8 +200,8 @@ app.put('/api/notes/:id', async (req, res) => {
   }
 });
 
-// DELETE /api/notes/:id - Delete a note
-app.delete('/api/notes/:id', async (req, res) => {
+// DELETE /api/notes/:id - Delete a note (Protected)
+app.delete('/api/notes/:id', verifyFirebaseToken, async (req, res) => {
   try {
     const deletedNote = await database.deleteNote(req.params.id);
     
