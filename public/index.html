@@ -245,38 +245,60 @@
                 const isRedirect = urlParams.get('redirect') === 'true';
                 console.log('🔄 Is redirect from Google:', isRedirect);
                 
-                // Handle redirect result FIRST, before setting up auth listener
-                let redirectSuccess = false;
-                if (auth && !localStorage.getItem('firebaseToken')) {
-                    try {
-                        console.log('🔄 Checking for redirect result...');
-                        const { getRedirectResult } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js');
-                        const redirectResult = await getRedirectResult(auth);
-                        if (redirectResult && redirectResult.user) {
-                            console.log('✅ Redirect sign-in successful:', redirectResult.user.email);
-                            const idToken = await redirectResult.user.getIdToken();
-                            console.log('🎫 Redirect ID Token obtained:', idToken.substring(0, 20) + '...');
-                            
-                            localStorage.setItem('firebaseToken', idToken);
-                            localStorage.setItem('user', JSON.stringify({
-                                uid: redirectResult.user.uid,
-                                email: redirectResult.user.email,
-                                name: redirectResult.user.displayName,
-                                picture: redirectResult.user.photoURL
-                            }));
-                            
-                            console.log('💾 Redirect user data stored in localStorage');
-                            showAuthenticatedUI(redirectResult.user);
-                            loadNotes();
-                            showMessage('Successfully signed in!', 'success');
-                            redirectSuccess = true;
+                        // Handle redirect result FIRST, before setting up auth listener
+                        let redirectSuccess = false;
+                        if (auth && !localStorage.getItem('firebaseToken')) {
+                            try {
+                                console.log('🔄 Checking for redirect result...');
+                                const { getRedirectResult } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js');
+                                console.log('🔄 Calling getRedirectResult...');
+                                const redirectResult = await getRedirectResult(auth);
+                                console.log('🔄 getRedirectResult returned:', redirectResult);
+                                
+                                if (redirectResult && redirectResult.user) {
+                                    console.log('✅ Redirect sign-in successful!');
+                                    console.log('👤 User details:', {
+                                        uid: redirectResult.user.uid,
+                                        email: redirectResult.user.email,
+                                        name: redirectResult.user.displayName,
+                                        emailVerified: redirectResult.user.emailVerified
+                                    });
+                                    
+                                    const idToken = await redirectResult.user.getIdToken();
+                                    console.log('🎫 Redirect ID Token obtained:', idToken.substring(0, 20) + '...');
+                                    
+                                    localStorage.setItem('firebaseToken', idToken);
+                                    localStorage.setItem('user', JSON.stringify({
+                                        uid: redirectResult.user.uid,
+                                        email: redirectResult.user.email,
+                                        name: redirectResult.user.displayName,
+                                        picture: redirectResult.user.photoURL
+                                    }));
+                                    
+                                    console.log('💾 Redirect user data stored in localStorage');
+                                    showAuthenticatedUI(redirectResult.user);
+                                    loadNotes();
+                                    showMessage('Successfully signed in!', 'success');
+                                    redirectSuccess = true;
+                                } else {
+                                    console.log('ℹ️ No redirect result found');
+                                    console.log('🔍 redirectResult value:', redirectResult);
+                                    console.log('🔍 redirectResult.user:', redirectResult ? redirectResult.user : 'N/A');
+                                }
+                            } catch (redirectError) {
+                                console.log('❌ Redirect result error:', redirectError);
+                                console.log('❌ Redirect error details:', {
+                                    code: redirectError.code,
+                                    message: redirectError.message,
+                                    stack: redirectError.stack
+                                });
+                            }
                         } else {
-                            console.log('ℹ️ No redirect result found');
+                            console.log('🔍 Skipping redirect check:', {
+                                hasAuth: !!auth,
+                                hasToken: !!localStorage.getItem('firebaseToken')
+                            });
                         }
-                    } catch (redirectError) {
-                        console.log('❌ Redirect result error:', redirectError);
-                    }
-                }
                 
                 // Only set up auth listener if redirect didn't succeed
                 if (!redirectSuccess) {
@@ -896,7 +918,7 @@
                 async function loadNotes() {
                     try {
                         const token = localStorage.getItem('firebaseToken');
-                        console.log('📝 Loading notes...', { hasToken: !!token });
+                        console.log('📝 Loading notes...', { hasToken: !!token, tokenPreview: token ? token.substring(0, 20) + '...' : 'none' });
                         
                         if (!token) {
                             console.log('❌ No token found, showing unauthenticated UI');
@@ -905,13 +927,15 @@
                         }
 
                         console.log('🌐 Making API request to /api/notes...');
+                        console.log('🔍 Request headers:', { Authorization: `Bearer ${token.substring(0, 20)}...` });
+                        
                         const response = await fetch('/api/notes', {
                             headers: {
                                 'Authorization': `Bearer ${token}`
                             }
                         });
                         
-                        console.log('📡 API response:', { status: response.status, statusText: response.statusText });
+                        console.log('📡 API response:', { status: response.status, statusText: response.statusText, ok: response.ok });
                         const result = await response.json();
                         console.log('📊 API result:', result);
 
