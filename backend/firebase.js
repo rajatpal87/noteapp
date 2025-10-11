@@ -74,12 +74,15 @@ const verifyFirebaseToken = async (req, res, next) => {
     // TEMPORARY: Accept mock tokens for testing
     if (idToken.startsWith('mock-token-')) {
       console.log('🔧 ACCEPTING MOCK TOKEN FOR TESTING:', idToken);
+      // Extract timestamp from token to create consistent user ID
+      const timestamp = idToken.replace('mock-token-', '');
       req.user = {
-        uid: 'test-user-mock',
+        uid: 'test-user-' + timestamp,
         email: 'test@example.com',
         name: 'Test User',
         picture: 'https://via.placeholder.com/40'
       };
+      console.log('🔧 MOCK USER ID:', req.user.uid);
       return next();
     }
 
