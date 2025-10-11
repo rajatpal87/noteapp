@@ -278,26 +278,39 @@
                 
                         // Handle redirect result FIRST, before setting up auth listener
                         let redirectSuccess = false;
+                        
+                        console.log('🔍 STEP 1: Checking redirect conditions...');
+                        console.log('🔍 Auth object exists:', !!auth);
+                        console.log('🔍 Has existing token:', !!localStorage.getItem('firebaseToken'));
+                        console.log('🔍 Will check redirect result:', auth && !localStorage.getItem('firebaseToken'));
+                        
                         if (auth && !localStorage.getItem('firebaseToken')) {
                             try {
-                                console.log('🔄 Checking for redirect result...');
+                                console.log('🔍 STEP 2: Starting redirect result processing...');
                                 const { getRedirectResult } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js');
-                                console.log('🔄 Calling getRedirectResult...');
+                                console.log('🔍 STEP 3: Calling getRedirectResult...');
+                                
                                 const redirectResult = await getRedirectResult(auth);
-                                console.log('🔄 getRedirectResult returned:', redirectResult);
+                                console.log('🔍 STEP 4: getRedirectResult completed');
+                                console.log('🔍 Redirect result type:', typeof redirectResult);
+                                console.log('🔍 Redirect result is null:', redirectResult === null);
+                                console.log('🔍 Redirect result:', JSON.stringify(redirectResult));
                                 
                                 if (redirectResult && redirectResult.user) {
-                                    console.log('✅ Redirect sign-in successful!');
-                                    console.log('👤 User details:', {
-                                        uid: redirectResult.user.uid,
-                                        email: redirectResult.user.email,
-                                        name: redirectResult.user.displayName,
-                                        emailVerified: redirectResult.user.emailVerified
-                                    });
+                                    console.log('✅ STEP 5: Redirect sign-in successful!');
+                                    console.log('🔍 User object type:', typeof redirectResult.user);
+                                    console.log('🔍 User UID:', redirectResult.user.uid);
+                                    console.log('🔍 User email:', redirectResult.user.email);
+                                    console.log('🔍 User name:', redirectResult.user.displayName);
+                                    console.log('🔍 User email verified:', redirectResult.user.emailVerified);
                                     
+                                    console.log('🔍 STEP 6: Getting ID token...');
                                     const idToken = await redirectResult.user.getIdToken();
-                                    console.log('🎫 Redirect ID Token obtained:', idToken.substring(0, 20) + '...');
+                                    console.log('🔍 ID token type:', typeof idToken);
+                                    console.log('🔍 ID token length:', idToken.length);
+                                    console.log('🔍 ID token preview:', idToken.substring(0, 50) + '...');
                                     
+                                    console.log('🔍 STEP 7: Storing user data...');
                                     localStorage.setItem('firebaseToken', idToken);
                                     localStorage.setItem('user', JSON.stringify({
                                         uid: redirectResult.user.uid,
@@ -306,29 +319,36 @@
                                         picture: redirectResult.user.photoURL
                                     }));
                                     
-                                    console.log('💾 Redirect user data stored in localStorage');
+                                    console.log('🔍 STEP 8: Showing authenticated UI...');
                                     showAuthenticatedUI(redirectResult.user);
+                                    
+                                    console.log('🔍 STEP 9: Loading notes...');
                                     loadNotes();
+                                    
                                     showMessage('Successfully signed in!', 'success');
                                     redirectSuccess = true;
+                                    console.log('✅ STEP 10: Redirect processing completed successfully!');
                                 } else {
-                                    console.log('ℹ️ No redirect result found');
-                                    console.log('🔍 redirectResult value:', redirectResult);
-                                    console.log('🔍 redirectResult.user:', redirectResult ? redirectResult.user : 'N/A');
+                                    console.log('❌ STEP 5: No redirect result found');
+                                    console.log('🔍 redirectResult === null:', redirectResult === null);
+                                    console.log('🔍 redirectResult === undefined:', redirectResult === undefined);
+                                    console.log('🔍 redirectResult type:', typeof redirectResult);
+                                    if (redirectResult) {
+                                        console.log('🔍 redirectResult has user property:', 'user' in redirectResult);
+                                        console.log('🔍 redirectResult.user:', redirectResult.user);
+                                    }
                                 }
                             } catch (redirectError) {
-                                console.log('❌ Redirect result error:', redirectError);
-                                console.log('❌ Redirect error details:', {
-                                    code: redirectError.code,
-                                    message: redirectError.message,
-                                    stack: redirectError.stack
-                                });
+                                console.log('❌ STEP X: Redirect result error occurred');
+                                console.log('🔍 Error type:', typeof redirectError);
+                                console.log('🔍 Error name:', redirectError.name);
+                                console.log('🔍 Error message:', redirectError.message);
+                                console.log('🔍 Error code:', redirectError.code);
+                                console.log('🔍 Full error:', JSON.stringify(redirectError, null, 2));
                             }
                         } else {
-                            console.log('🔍 Skipping redirect check:', {
-                                hasAuth: !!auth,
-                                hasToken: !!localStorage.getItem('firebaseToken')
-                            });
+                            console.log('🔍 STEP 1: Skipping redirect check');
+                            console.log('🔍 Reason - hasAuth:', !!auth, 'hasToken:', !!localStorage.getItem('firebaseToken'));
                         }
                 
                 // Only set up auth listener if redirect didn't succeed
@@ -951,17 +971,23 @@
                 // Load all notes
                 async function loadNotes() {
                     try {
+                        console.log('🔍 LOAD NOTES STEP 1: Starting notes loading...');
                         const token = localStorage.getItem('firebaseToken');
-                        console.log('📝 Loading notes...', { hasToken: !!token, tokenPreview: token ? token.substring(0, 20) + '...' : 'none' });
+                        console.log('🔍 Token exists:', !!token);
+                        console.log('🔍 Token type:', typeof token);
+                        console.log('🔍 Token length:', token ? token.length : 0);
+                        console.log('🔍 Token preview:', token ? token.substring(0, 50) + '...' : 'none');
                         
                         if (!token) {
-                            console.log('❌ No token found, showing unauthenticated UI');
+                            console.log('❌ LOAD NOTES STEP 2: No token found, showing unauthenticated UI');
                             showUnauthenticatedUI();
                             return;
                         }
 
-                        console.log('🌐 Making API request to /api/notes...');
-                        console.log('🔍 Request headers:', { Authorization: `Bearer ${token.substring(0, 20)}...` });
+                        console.log('🔍 LOAD NOTES STEP 3: Making API request...');
+                        console.log('🔍 Request URL: /api/notes');
+                        console.log('🔍 Request method: GET');
+                        console.log('🔍 Authorization header:', `Bearer ${token.substring(0, 50)}...`);
                         
                         const response = await fetch('/api/notes', {
                             headers: {
@@ -969,9 +995,19 @@
                             }
                         });
                         
-                        console.log('📡 API response:', { status: response.status, statusText: response.statusText, ok: response.ok });
+                        console.log('🔍 LOAD NOTES STEP 4: API response received');
+                        console.log('🔍 Response status:', response.status);
+                        console.log('🔍 Response status text:', response.statusText);
+                        console.log('🔍 Response ok:', response.ok);
+                        console.log('🔍 Response headers:', Object.fromEntries(response.headers.entries()));
+                        
                         const result = await response.json();
-                        console.log('📊 API result:', result);
+                        console.log('🔍 LOAD NOTES STEP 5: Response parsed');
+                        console.log('🔍 Result type:', typeof result);
+                        console.log('🔍 Result success:', result.success);
+                        console.log('🔍 Result data type:', typeof result.data);
+                        console.log('🔍 Result data length:', result.data ? result.data.length : 'N/A');
+                        console.log('🔍 Full result:', JSON.stringify(result, null, 2));
 
                         if (result.success) {
                             console.log('✅ Notes loaded successfully:', result.data.length, 'notes');
