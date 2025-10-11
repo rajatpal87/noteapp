@@ -9,6 +9,7 @@ const { verifyFirebaseToken, isFirebaseConfigured } = require('./firebase');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+
 // Middleware
 app.use(helmet({
   contentSecurityPolicy: false,
@@ -101,6 +102,11 @@ app.get('/api/auth/status', (req, res) => {
     apiKey: config.apiKey ? '✅ Set (' + config.apiKey.substring(0, 10) + '...)' : '❌ Missing',
     firebaseConfigured: isFirebaseConfigured()
   });
+  
+  console.log('🔍 AUTH DOMAIN DEBUG - Current value:', config.authDomain);
+  console.log('🔍 AUTH DOMAIN DEBUG - Should be: noteapp-3k13.onrender.com');
+  console.log('🔍 AUTH DOMAIN DEBUG - Match check:', config.authDomain === 'noteapp-3k13.onrender.com' ? '✅ MATCH' : '❌ MISMATCH');
+  console.log('🔍 DEPLOYMENT CHECK - Backend is running after env var change');
   
   res.json({
     success: true,
@@ -279,13 +285,28 @@ app.use((err, req, res, next) => {
 });
 
 // Start server
-const server = app.listen(PORT, '0.0.0.0', () => {
-  console.log(`🚀 Note App running on http://localhost:${PORT}`);
-  console.log(`📊 Health check: http://localhost:${PORT}/api/health`);
-  console.log(`📋 API endpoints: http://localhost:${PORT}/api/notes`);
-  console.log(`🌐 Also accessible via: http://127.0.0.1:${PORT}`);
-  console.log(`✅ BACKEND CHANGES DEPLOYED - AUTHENTICATION REMOVED FOR TESTING`);
-});
+try {
+  console.log('🔧 Attempting to start server...');
+  const server = app.listen(PORT, '0.0.0.0', () => {
+    console.log(`🚀 Note App running on http://localhost:${PORT}`);
+    console.log(`📊 Health check: http://localhost:${PORT}/api/health`);
+    console.log(`📋 API endpoints: http://localhost:${PORT}/api/notes`);
+    console.log(`🌐 Also accessible via: http://127.0.0.1:${PORT}`);
+    console.log(`✅ SERVER STARTED SUCCESSFULLY - REDEPLOY TRIGGER`);
+    console.log(`🔍 AUTH DOMAIN: ${process.env.FIREBASE_AUTH_DOMAIN}`);
+  });
+  
+  server.on('error', (err) => {
+    console.error('❌ Server startup error:', err);
+    if (err.code === 'EADDRINUSE') {
+      console.error(`❌ Port ${PORT} is already in use`);
+    }
+    process.exit(1);
+  });
+} catch (error) {
+  console.error('❌ Failed to start server:', error);
+  process.exit(1);
+}
 
 // Handle server errors
 server.on('error', (err) => {
