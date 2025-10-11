@@ -114,9 +114,12 @@ app.get('/api/auth/status', (req, res) => {
 // GET /api/notes - Get all notes (TEMPORARILY UNPROTECTED FOR TESTING)
 app.get('/api/notes', async (req, res) => {
   try {
+    console.log('🔍 GET /api/notes called - NO AUTH REQUIRED');
     // Use a fixed user ID for testing
     const testUserId = 'test-user-simple';
+    console.log('🔍 Using test user ID:', testUserId);
     const notes = await database.getAllNotes(testUserId);
+    console.log('🔍 Found notes:', notes.length);
     res.json({
       success: true,
       data: notes,
@@ -124,7 +127,7 @@ app.get('/api/notes', async (req, res) => {
       storage: dbStatus.connected ? 'database' : 'memory'
     });
   } catch (error) {
-    console.error('Error fetching notes:', error);
+    console.error('❌ Error fetching notes:', error);
     res.status(500).json({
       success: false,
       error: 'Failed to fetch notes',
@@ -160,6 +163,9 @@ app.get('/api/notes/:id', verifyFirebaseToken, async (req, res) => {
 // POST /api/notes - Create a new note (TEMPORARILY UNPROTECTED FOR TESTING)
 app.post('/api/notes', async (req, res) => {
   try {
+    console.log('🔍 POST /api/notes called - NO AUTH REQUIRED');
+    console.log('🔍 Request body:', req.body);
+    
     const { title, content } = req.body;
 
     if (!title || !content) {
@@ -171,7 +177,9 @@ app.post('/api/notes', async (req, res) => {
 
     // Use a fixed user ID for testing
     const testUserId = 'test-user-simple';
+    console.log('🔍 Creating note with user ID:', testUserId);
     const newNote = await database.createNote(title, content, testUserId);
+    console.log('🔍 Note created:', newNote);
 
     res.status(201).json({
       success: true,
@@ -180,7 +188,7 @@ app.post('/api/notes', async (req, res) => {
       storage: dbStatus.connected ? 'database' : 'memory'
     });
   } catch (error) {
-    console.error('Error creating note:', error);
+    console.error('❌ Error creating note:', error);
     res.status(500).json({
       success: false,
       error: 'Failed to create note',
