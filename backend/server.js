@@ -88,10 +88,11 @@ app.get('/api/auth/status', (req, res) => {
     apiKey: process.env.FIREBASE_API_KEY
   };
   
-  console.log('Firebase Config Check:', {
-    projectId: config.projectId ? '✅ Set' : '❌ Missing',
-    authDomain: config.authDomain ? '✅ Set' : '❌ Missing', 
-    apiKey: config.apiKey ? '✅ Set' : '❌ Missing'
+  console.log('🔍 /api/auth/status - Firebase Config Check:', {
+    projectId: config.projectId ? '✅ Set (' + config.projectId + ')' : '❌ Missing',
+    authDomain: config.authDomain ? '✅ Set (' + config.authDomain + ')' : '❌ Missing', 
+    apiKey: config.apiKey ? '✅ Set (' + config.apiKey.substring(0, 10) + '...)' : '❌ Missing',
+    firebaseConfigured: isFirebaseConfigured()
   });
   
   res.json({

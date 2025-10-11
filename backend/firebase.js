@@ -6,10 +6,10 @@ let firebaseAdmin = null;
 try {
         // Debug environment variables
         console.log('🔍 Firebase environment variables check:', {
-            FIREBASE_PROJECT_ID: process.env.FIREBASE_PROJECT_ID ? '✅ Set' : '❌ Missing',
-            FIREBASE_AUTH_DOMAIN: process.env.FIREBASE_AUTH_DOMAIN ? '✅ Set' : '❌ Missing',
-            FIREBASE_CLIENT_EMAIL: process.env.FIREBASE_CLIENT_EMAIL ? '✅ Set' : '❌ Missing',
-            FIREBASE_PRIVATE_KEY: process.env.FIREBASE_PRIVATE_KEY ? '✅ Set' : '❌ Missing'
+            FIREBASE_PROJECT_ID: process.env.FIREBASE_PROJECT_ID ? '✅ Set (' + process.env.FIREBASE_PROJECT_ID + ')' : '❌ Missing',
+            FIREBASE_AUTH_DOMAIN: process.env.FIREBASE_AUTH_DOMAIN ? '✅ Set (' + process.env.FIREBASE_AUTH_DOMAIN + ')' : '❌ Missing',
+            FIREBASE_CLIENT_EMAIL: process.env.FIREBASE_CLIENT_EMAIL ? '✅ Set (' + process.env.FIREBASE_CLIENT_EMAIL.substring(0, 20) + '...)' : '❌ Missing',
+            FIREBASE_PRIVATE_KEY: process.env.FIREBASE_PRIVATE_KEY ? '✅ Set (' + process.env.FIREBASE_PRIVATE_KEY.substring(0, 20) + '...)' : '❌ Missing'
         });
         
         // Check if Firebase credentials are available from Render environment variables
