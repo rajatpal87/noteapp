@@ -58,6 +58,9 @@
                     googleProvider.addScope('email');
                     googleProvider.addScope('profile');
                     
+                    // Set the redirect URI explicitly for the current domain
+                    auth.tenantId = null; // Ensure we're using the default tenant
+                    
                     console.log('🔍 Google provider configured:', {
                         providerId: googleProvider.providerId,
                         scopes: googleProvider.getScopes(),
@@ -90,16 +93,33 @@
                         }
                         
                         persistentLog.add('Starting Google authentication...', 'info');
+                        persistentLog.add('Auth object details: ' + JSON.stringify({
+                            hasAuth: !!auth,
+                            currentUser: auth.currentUser ? auth.currentUser.email : 'null',
+                            authDomain: auth.config.authDomain
+                        }), 'info');
+                        
                         showMessage('Redirecting to Google for authentication...', 'info');
+                        
+                        // Store redirect info before redirecting
+                        localStorage.setItem('auth_redirect_started', Date.now().toString());
+                        localStorage.setItem('auth_redirect_url', window.location.href);
                         
                         // Use redirect-based authentication for better reliability
                         const { signInWithRedirect } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js');
+                        
+                        persistentLog.add('About to call signInWithRedirect...', 'info');
                         await signInWithRedirect(auth, googleProvider);
                         
                         persistentLog.add('Redirect initiated successfully', 'success');
                         
                     } catch (error) {
                         persistentLog.add('Google authentication error: ' + error.message, 'error');
+                        persistentLog.add('Error details: ' + JSON.stringify({
+                            name: error.name,
+                            code: error.code,
+                            message: error.message
+                        }), 'error');
                         showMessage('Authentication failed: ' + error.message, 'error');
                     }
                 };
@@ -431,15 +451,28 @@
             try {
                 persistentLog.add('Checking for redirect result...', 'info');
                 const { getRedirectResult } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js');
+                
+                // Check if we just came back from a redirect
+                const redirectStarted = localStorage.getItem('auth_redirect_started');
+                const timeSinceRedirect = redirectStarted ? Date.now() - parseInt(redirectStarted) : null;
+                
+                persistentLog.add('Redirect timing check: ' + JSON.stringify({
+                    redirectStarted: !!redirectStarted,
+                    timeSinceRedirect: timeSinceRedirect,
+                    isRecentRedirect: timeSinceRedirect && timeSinceRedirect < 60000 // Less than 1 minute
+                }), 'info');
+                
                 const result = await getRedirectResult(auth);
+                
+                persistentLog.add('Raw redirect result: ' + JSON.stringify({
+                    hasResult: !!result,
+                    hasUser: result && !!result.user,
+                    operationType: result ? result.operationType : 'none',
+                    userEmail: result && result.user ? result.user.email : 'none'
+                }), 'info');
                 
                 if (result && result.user) {
                     persistentLog.add('Redirect result found: ' + result.user.email, 'success');
-                    persistentLog.add('Redirect result details: ' + JSON.stringify({
-                        user: result.user.email,
-                        credential: result.credential ? 'present' : 'missing',
-                        operationType: result.operationType
-                    }), 'info');
                     
                     // Store user data immediately
                     const idToken = await result.user.getIdToken();
@@ -452,6 +485,10 @@
                     }));
                     localStorage.setItem('authExpiry', (Date.now() + 24 * 60 * 60 * 1000).toString());
                     
+                    // Clear redirect tracking
+                    localStorage.removeItem('auth_redirect_started');
+                    localStorage.removeItem('auth_redirect_url');
+                    
                     persistentLog.add('User data stored from redirect result', 'success');
                     
                     // Show authenticated UI
@@ -459,10 +496,17 @@
                     loadNotes();
                 } else {
                     persistentLog.add('No redirect result found', 'warning');
+                    if (timeSinceRedirect && timeSinceRedirect < 60000) {
+                        persistentLog.add('Recent redirect detected but no result - possible timing issue', 'warning');
+                    }
                 }
             } catch (error) {
                 persistentLog.add('Error checking redirect result: ' + error.message, 'error');
-                showMessage('Authentication error: ' + error.message, 'error');
+                persistentLog.add('Error details: ' + JSON.stringify({
+                    name: error.name,
+                    code: error.code,
+                    message: error.message
+                }), 'error');
             }
         }
 
@@ -575,64 +619,45 @@
             if (initialized) {
                 console.log('✅ Firebase initialized, checking for redirect result first...');
                 
-                // Check if this is a redirect from Google Sign-In
-                const urlParams = new URLSearchParams(window.location.search);
-                const isRedirect = urlParams.get('redirect') === 'true';
-                console.log('🔄 Is redirect from Google:', isRedirect);
-                console.log('🔍 Current URL:', window.location.href);
-                console.log('🔍 URL search params:', window.location.search);
-                console.log('🔍 All URL params:', Object.fromEntries(urlParams.entries()));
+                // IMMEDIATELY check for redirect result before anything else
+                console.log('🔍 IMMEDIATE redirect result check...');
+                try {
+                    const { getRedirectResult } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js');
+                    const immediateResult = await getRedirectResult(auth);
+                    console.log('🔍 IMMEDIATE redirect result:', immediateResult);
+                    
+                    if (immediateResult && immediateResult.user) {
+                        console.log('✅ IMMEDIATE redirect success!');
+                        const user = immediateResult.user;
+                        const idToken = await user.getIdToken();
+                        
+                        localStorage.setItem('firebaseToken', idToken);
+                        localStorage.setItem('user', JSON.stringify({
+                            uid: user.uid,
+                            email: user.email,
+                            name: user.displayName,
+                            picture: user.photoURL
+                        }));
+                        localStorage.setItem('authExpiry', (Date.now() + 24 * 60 * 60 * 1000).toString());
+                        
+                        // Clear redirect tracking
+                        localStorage.removeItem('auth_redirect_started');
+                        localStorage.removeItem('auth_redirect_url');
+                        
+                        showAuthenticatedUI(user);
+                        loadNotes();
+                        showMessage('Successfully signed in!', 'success');
+                        return; // Exit early - redirect was successful
+                    } else {
+                        console.log('🔍 No immediate redirect result found');
+                    }
+                } catch (immediateError) {
+                    console.log('❌ Immediate redirect check error:', immediateError);
+                }
                 
-                        // Check for redirect result first, then set up auth listener
-                        console.log('🔍 Setting up authentication...');
-                        
-                        // Store debug info in localStorage to survive redirects
-                        const debugInfo = {
-                            timestamp: new Date().toISOString(),
-                            url: window.location.href,
-                            searchParams: window.location.search,
-                            hasAuth: !!auth,
-                            hasToken: !!localStorage.getItem('firebaseToken')
-                        };
-                        localStorage.setItem('debug_redirect_check', JSON.stringify(debugInfo));
-                        
-                        console.log('🔍 Auth object exists:', !!auth);
-                        console.log('🔍 Has existing token:', !!localStorage.getItem('firebaseToken'));
-                        
-                        // Check if this is a redirect from Google Sign-In
-                        if (auth && !localStorage.getItem('firebaseToken')) {
-                            console.log('🔍 Checking for redirect result...');
-                            try {
-                                const { getRedirectResult } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js');
-                                const redirectResult = await getRedirectResult(auth);
-                                console.log('🔍 Redirect result:', redirectResult);
-                                
-                                if (redirectResult && redirectResult.user) {
-                                    console.log('✅ Redirect sign-in successful!');
-                                    const user = redirectResult.user;
-                                    const idToken = await user.getIdToken();
-                                    
-                                    localStorage.setItem('firebaseToken', idToken);
-                                    localStorage.setItem('user', JSON.stringify({
-                                        uid: user.uid,
-                                        email: user.email,
-                                        name: user.displayName,
-                                        picture: user.photoURL
-                                    }));
-                                    
-                                    showAuthenticatedUI(user);
-                                    loadNotes();
-                                    showMessage('Successfully signed in!', 'success');
-                                    return; // Exit early if redirect was successful
-                                }
-                            } catch (redirectError) {
-                                console.log('❌ Redirect result error:', redirectError);
-                            }
-                        }
-                        
-                        // Set up auth listener
-                        console.log('🔔 Setting up auth listener...');
-                        setupAuthStateListener();
+                // Set up auth listener
+                console.log('🔔 Setting up auth listener...');
+                setupAuthStateListener();
                         
                         // Check if we're coming back from a redirect
                         const urlParams2 = new URLSearchParams(window.location.search);
