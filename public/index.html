@@ -99,35 +99,23 @@
                             authDomain: auth.config.authDomain
                         }), 'info');
                         
-                        showMessage('Opening Google authentication popup...', 'info');
+                        showMessage('Redirecting to Google for authentication...', 'info');
                         
-                        // Use popup-based authentication (more reliable than redirect)
-                        const { signInWithPopup } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js');
+                        // Use redirect-based authentication
+                        const { signInWithRedirect } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js');
                         
-                        persistentLog.add('About to call signInWithPopup...', 'info');
-                        const result = await signInWithPopup(auth, googleProvider);
+                        // Clear any old redirect tracking
+                        localStorage.removeItem('auth_redirect_started');
+                        localStorage.removeItem('auth_redirect_url');
                         
-                        if (result && result.user) {
-                            persistentLog.add('Popup authentication successful: ' + result.user.email, 'success');
-                            
-                            // Store user data immediately
-                            const idToken = await result.user.getIdToken();
-                            localStorage.setItem('firebaseToken', idToken);
-                            localStorage.setItem('user', JSON.stringify({
-                                uid: result.user.uid,
-                                email: result.user.email,
-                                name: result.user.displayName,
-                                picture: result.user.photoURL
-                            }));
-                            localStorage.setItem('authExpiry', (Date.now() + 24 * 60 * 60 * 1000).toString());
-                            
-                            // Show authenticated UI
-                            showAuthenticatedUI(result.user);
-                            loadNotes();
-                            showMessage('Successfully signed in!', 'success');
-                        }
+                        // Store current redirect start time
+                        localStorage.setItem('auth_redirect_started', Date.now().toString());
+                        localStorage.setItem('auth_redirect_url', window.location.href);
                         
-                        persistentLog.add('Popup authentication completed', 'success');
+                        persistentLog.add('About to call signInWithRedirect...', 'info');
+                        await signInWithRedirect(auth, googleProvider);
+                        
+                        persistentLog.add('Redirect initiated successfully', 'success');
                         
                     } catch (error) {
                         persistentLog.add('Google authentication error: ' + error.message, 'error');
