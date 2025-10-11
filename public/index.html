@@ -31,7 +31,7 @@
                 if (result.success && result.firebaseConfig) {
                     firebaseConfig = {
                         apiKey: result.firebaseConfig.apiKey,
-                        authDomain: result.firebaseConfig.authDomain,
+                        authDomain: "noteapp-3k13.onrender.com", // Use actual Render domain instead of Firebase domain
                         projectId: result.firebaseConfig.projectId,
                         storageBucket: "rajat-s-project-ff711.firebasestorage.app",
                         messagingSenderId: "979852414023",
@@ -41,8 +41,8 @@
                     
                     console.log('Firebase config being used:', {
                         apiKey: firebaseConfig.apiKey ? '✅ Set (' + firebaseConfig.apiKey.substring(0, 10) + '...)' : '❌ Missing',
-                        authDomain: firebaseConfig.authDomain ? '✅ Set' : '❌ Missing',
-                        projectId: firebaseConfig.projectId ? '✅ Set' : '❌ Missing'
+                        authDomain: firebaseConfig.authDomain ? '✅ Set (' + firebaseConfig.authDomain + ')' : '❌ Missing',
+                        projectId: firebaseConfig.projectId ? '✅ Set (' + firebaseConfig.projectId + ')' : '❌ Missing'
                     });
                     
                     app = initializeApp(firebaseConfig);
