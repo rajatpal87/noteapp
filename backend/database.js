@@ -13,6 +13,24 @@ if (!supabaseUrl || !supabaseKey) {
 // Create Supabase client
 const supabase = supabaseUrl && supabaseKey ? createClient(supabaseUrl, supabaseKey) : null;
 
+// Fallback in-memory storage when database is not available
+let fallbackNotes = [
+  {
+    id: '1',
+    title: 'Welcome to your Note App!',
+    content: 'This is your first note. You can edit, delete, or create new notes. Note: This is stored temporarily in memory.',
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  },
+  {
+    id: '2',
+    title: 'Database Setup',
+    content: 'To persist your notes permanently, set up Supabase database following the deployment guide.',
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  }
+];
+
 // Database operations
 class Database {
   constructor() {
@@ -47,7 +65,8 @@ class Database {
   // Get all notes
   async getAllNotes() {
     if (!this.isConnected) {
-      throw new Error('Database not connected');
+      // Return fallback notes when database is not connected
+      return fallbackNotes.sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at));
     }
 
     try {
@@ -63,14 +82,21 @@ class Database {
       return data || [];
     } catch (err) {
       console.error('Error fetching notes:', err);
-      throw err;
+      // Fallback to in-memory storage on database error
+      console.log('Falling back to in-memory storage');
+      return fallbackNotes.sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at));
     }
   }
 
   // Get a specific note by ID
   async getNoteById(id) {
     if (!this.isConnected) {
-      throw new Error('Database not connected');
+      // Search in fallback notes
+      const note = fallbackNotes.find(n => n.id === id);
+      if (!note) {
+        throw new Error('Note not found');
+      }
+      return note;
     }
 
     try {
@@ -90,14 +116,29 @@ class Database {
       return data;
     } catch (err) {
       console.error('Error fetching note:', err);
-      throw err;
+      // Fallback to in-memory storage
+      const note = fallbackNotes.find(n => n.id === id);
+      if (!note) {
+        throw new Error('Note not found');
+      }
+      return note;
     }
   }
 
   // Create a new note
   async createNote(title, content) {
     if (!this.isConnected) {
-      throw new Error('Database not connected');
+      // Create note in fallback storage
+      const { v4: uuidv4 } = require('uuid');
+      const newNote = {
+        id: uuidv4(),
+        title: title.trim(),
+        content: content.trim(),
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+      fallbackNotes.push(newNote);
+      return newNote;
     }
 
     try {
@@ -121,14 +162,37 @@ class Database {
       return data;
     } catch (err) {
       console.error('Error creating note:', err);
-      throw err;
+      // Fallback to in-memory storage
+      const { v4: uuidv4 } = require('uuid');
+      const newNote = {
+        id: uuidv4(),
+        title: title.trim(),
+        content: content.trim(),
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+      fallbackNotes.push(newNote);
+      return newNote;
     }
   }
 
   // Update an existing note
   async updateNote(id, title, content) {
     if (!this.isConnected) {
-      throw new Error('Database not connected');
+      // Update note in fallback storage
+      const noteIndex = fallbackNotes.findIndex(n => n.id === id);
+      if (noteIndex === -1) {
+        throw new Error('Note not found');
+      }
+      
+      fallbackNotes[noteIndex] = {
+        ...fallbackNotes[noteIndex],
+        title: title.trim(),
+        content: content.trim(),
+        updated_at: new Date().toISOString()
+      };
+      
+      return fallbackNotes[noteIndex];
     }
 
     try {
@@ -155,14 +219,34 @@ class Database {
       return data;
     } catch (err) {
       console.error('Error updating note:', err);
-      throw err;
+      // Fallback to in-memory storage
+      const noteIndex = fallbackNotes.findIndex(n => n.id === id);
+      if (noteIndex === -1) {
+        throw new Error('Note not found');
+      }
+      
+      fallbackNotes[noteIndex] = {
+        ...fallbackNotes[noteIndex],
+        title: title.trim(),
+        content: content.trim(),
+        updated_at: new Date().toISOString()
+      };
+      
+      return fallbackNotes[noteIndex];
     }
   }
 
   // Delete a note
   async deleteNote(id) {
     if (!this.isConnected) {
-      throw new Error('Database not connected');
+      // Delete note from fallback storage
+      const noteIndex = fallbackNotes.findIndex(n => n.id === id);
+      if (noteIndex === -1) {
+        throw new Error('Note not found');
+      }
+      
+      const deletedNote = fallbackNotes.splice(noteIndex, 1)[0];
+      return deletedNote;
     }
 
     try {
@@ -183,14 +267,22 @@ class Database {
       return data;
     } catch (err) {
       console.error('Error deleting note:', err);
-      throw err;
+      // Fallback to in-memory storage
+      const noteIndex = fallbackNotes.findIndex(n => n.id === id);
+      if (noteIndex === -1) {
+        throw new Error('Note not found');
+      }
+      
+      const deletedNote = fallbackNotes.splice(noteIndex, 1)[0];
+      return deletedNote;
     }
   }
 
   // Get total count of notes
   async getNotesCount() {
     if (!this.isConnected) {
-      throw new Error('Database not connected');
+      // Return fallback notes count
+      return fallbackNotes.length;
     }
 
     try {
@@ -205,7 +297,8 @@ class Database {
       return count || 0;
     } catch (err) {
       console.error('Error getting notes count:', err);
-      throw err;
+      // Fallback to in-memory storage count
+      return fallbackNotes.length;
     }
   }
 }

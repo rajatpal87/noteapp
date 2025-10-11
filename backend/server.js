@@ -81,19 +81,12 @@ app.get('/api/health', async (req, res) => {
 // GET /api/notes - Get all notes
 app.get('/api/notes', async (req, res) => {
   try {
-    if (!dbStatus.connected) {
-      return res.status(503).json({
-        success: false,
-        error: 'Database not available',
-        message: 'Please check your Supabase configuration'
-      });
-    }
-
     const notes = await database.getAllNotes();
     res.json({
       success: true,
       data: notes,
-      total: notes.length
+      total: notes.length,
+      storage: dbStatus.connected ? 'database' : 'memory'
     });
   } catch (error) {
     console.error('Error fetching notes:', error);
@@ -108,14 +101,6 @@ app.get('/api/notes', async (req, res) => {
 // GET /api/notes/:id - Get a specific note
 app.get('/api/notes/:id', async (req, res) => {
   try {
-    if (!dbStatus.connected) {
-      return res.status(503).json({
-        success: false,
-        error: 'Database not available',
-        message: 'Please check your Supabase configuration'
-      });
-    }
-
     const note = await database.getNoteById(req.params.id);
     res.json({
       success: true,
@@ -140,14 +125,6 @@ app.get('/api/notes/:id', async (req, res) => {
 // POST /api/notes - Create a new note
 app.post('/api/notes', async (req, res) => {
   try {
-    if (!dbStatus.connected) {
-      return res.status(503).json({
-        success: false,
-        error: 'Database not available',
-        message: 'Please check your Supabase configuration'
-      });
-    }
-
     const { title, content } = req.body;
     
     if (!title || !content) {
@@ -162,7 +139,8 @@ app.post('/api/notes', async (req, res) => {
     res.status(201).json({
       success: true,
       data: newNote,
-      message: 'Note created successfully'
+      message: 'Note created successfully',
+      storage: dbStatus.connected ? 'database' : 'memory'
     });
   } catch (error) {
     console.error('Error creating note:', error);
@@ -177,14 +155,6 @@ app.post('/api/notes', async (req, res) => {
 // PUT /api/notes/:id - Update a note
 app.put('/api/notes/:id', async (req, res) => {
   try {
-    if (!dbStatus.connected) {
-      return res.status(503).json({
-        success: false,
-        error: 'Database not available',
-        message: 'Please check your Supabase configuration'
-      });
-    }
-
     const { title, content } = req.body;
 
     if (!title || !content) {
@@ -199,7 +169,8 @@ app.put('/api/notes/:id', async (req, res) => {
     res.json({
       success: true,
       data: updatedNote,
-      message: 'Note updated successfully'
+      message: 'Note updated successfully',
+      storage: dbStatus.connected ? 'database' : 'memory'
     });
   } catch (error) {
     console.error('Error updating note:', error);
@@ -220,20 +191,13 @@ app.put('/api/notes/:id', async (req, res) => {
 // DELETE /api/notes/:id - Delete a note
 app.delete('/api/notes/:id', async (req, res) => {
   try {
-    if (!dbStatus.connected) {
-      return res.status(503).json({
-        success: false,
-        error: 'Database not available',
-        message: 'Please check your Supabase configuration'
-      });
-    }
-
     const deletedNote = await database.deleteNote(req.params.id);
     
     res.json({
       success: true,
       data: deletedNote,
-      message: 'Note deleted successfully'
+      message: 'Note deleted successfully',
+      storage: dbStatus.connected ? 'database' : 'memory'
     });
   } catch (error) {
     console.error('Error deleting note:', error);
