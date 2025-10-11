@@ -84,8 +84,8 @@
                         console.log('🔑 Testing with mock authentication...');
                         showMessage('Testing authentication...', 'info');
                         
-                        // Use a FIXED user ID and token for testing (works with current backend)
-                        const fixedUserId = 'test-user-fixed';
+                        // Use the EXACT user ID that current backend expects
+                        const fixedUserId = 'test-user-mock';  // This matches current backend
                         const fixedToken = 'mock-token-fixed';
                         
                         // Create a mock user for testing
