@@ -257,6 +257,50 @@
                 // Show debug info on page load
                 window.addEventListener('load', () => {
                     setTimeout(showDebugInfo, 1000);
+                    
+                    // Set up button event listeners
+                    const refreshBtn = document.getElementById('refresh-debug-btn');
+                    const clearBtn = document.getElementById('clear-logs-btn');
+                    const testBtn = document.getElementById('test-js-btn');
+                    
+                    if (refreshBtn) {
+                        refreshBtn.addEventListener('click', () => {
+                            persistentLog.add('Refresh debug button clicked', 'info');
+                            showDebugInfo();
+                        });
+                    }
+                    
+                    if (clearBtn) {
+                        clearBtn.addEventListener('click', () => {
+                            persistentLog.clear();
+                            persistentLog.add('Logs cleared by user', 'info');
+                            showDebugInfo();
+                        });
+                    }
+                    
+                    if (testBtn) {
+                        testBtn.addEventListener('click', () => {
+                            alert('JavaScript is working!');
+                            persistentLog.add('Test JS button clicked - JavaScript is working', 'success');
+                            showDebugInfo();
+                        });
+                    }
+                    
+                    // Test if JavaScript is working
+                    persistentLog.add('Page loaded, JavaScript is working', 'success');
+                    
+                    // Also set up Google sign-in button
+                    const googleBtn = document.getElementById('google-signin-button');
+                    if (googleBtn) {
+                        googleBtn.addEventListener('click', (e) => {
+                            e.preventDefault();
+                            persistentLog.add('Google sign-in button clicked', 'info');
+                            signInWithGoogle();
+                        });
+                        persistentLog.add('Google sign-in button event listener set up', 'success');
+                    } else {
+                        persistentLog.add('Google sign-in button not found!', 'error');
+                    }
                 });
 
         // Listen for auth state changes (will be set up after Firebase initialization)
@@ -1132,8 +1176,9 @@
                     <div id="debug-info" style="background: #f0f0f0; padding: 10px; margin: 10px; border-radius: 5px; font-size: 0.8rem; text-align: left;">
                         <h4>Debug Info (survives redirects):</h4>
                         <div id="debug-content">Loading debug info...</div>
-                                <button onclick="alert('Button clicked!'); console.log('🔄 Refreshing debug info...'); if(typeof showDebugInfo === 'function') { showDebugInfo(); } else { console.error('showDebugInfo function not found'); }" style="background: blue; color: white; padding: 5px; margin: 5px; border: none; border-radius: 3px; cursor: pointer;">Refresh Debug Info</button>
-                                <button onclick="if(typeof persistentLog !== 'undefined') { persistentLog.clear(); persistentLog.add('Logs cleared by user', 'info'); showDebugInfo(); } else { console.error('persistentLog not found'); }" style="background: red; color: white; padding: 5px; margin: 5px; border: none; border-radius: 3px; cursor: pointer;">Clear Logs</button>
+                                <button id="refresh-debug-btn" style="background: blue; color: white; padding: 5px; margin: 5px; border: none; border-radius: 3px; cursor: pointer;">Refresh Debug Info</button>
+                                <button id="clear-logs-btn" style="background: red; color: white; padding: 5px; margin: 5px; border: none; border-radius: 3px; cursor: pointer;">Clear Logs</button>
+                                <button id="test-js-btn" style="background: green; color: white; padding: 5px; margin: 5px; border: none; border-radius: 3px; cursor: pointer;">Test JS</button>
                     </div>
                     <button onclick="alert('Redirect test clicked!'); console.log('🧪 Testing redirect result manually...'); if(typeof testRedirectResult === 'function') { testRedirectResult(); } else { console.error('testRedirectResult function not found'); }" style="background: orange; color: white; padding: 10px; margin: 10px; border: none; border-radius: 5px; cursor: pointer;">
                         Test Redirect Result
