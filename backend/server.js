@@ -88,6 +88,13 @@ app.get('/api/auth/status', (req, res) => {
     apiKey: process.env.FIREBASE_API_KEY
   };
   
+  const envStatus = {
+    FIREBASE_PROJECT_ID: process.env.FIREBASE_PROJECT_ID ? '✅ Set' : '❌ Missing',
+    FIREBASE_AUTH_DOMAIN: process.env.FIREBASE_AUTH_DOMAIN ? '✅ Set' : '❌ Missing',
+    FIREBASE_CLIENT_EMAIL: process.env.FIREBASE_CLIENT_EMAIL ? '✅ Set' : '❌ Missing',
+    FIREBASE_PRIVATE_KEY: process.env.FIREBASE_PRIVATE_KEY ? '✅ Set' : '❌ Missing'
+  };
+  
   console.log('🔍 /api/auth/status - Firebase Config Check:', {
     projectId: config.projectId ? '✅ Set (' + config.projectId + ')' : '❌ Missing',
     authDomain: config.authDomain ? '✅ Set (' + config.authDomain + ')' : '❌ Missing', 
@@ -99,7 +106,8 @@ app.get('/api/auth/status', (req, res) => {
     success: true,
     firebaseConfigured: isFirebaseConfigured(),
     authenticationRequired: true,
-    firebaseConfig: config
+    firebaseConfig: config,
+    environmentStatus: envStatus
   });
 });
 

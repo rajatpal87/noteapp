@@ -24,6 +24,10 @@
                 
                 console.log('Backend response:', result);
                 
+                if (result.environmentStatus) {
+                    console.log('🔍 Backend Environment Variables Status:', result.environmentStatus);
+                }
+                
                 if (result.success && result.firebaseConfig) {
                     firebaseConfig = {
                         apiKey: result.firebaseConfig.apiKey,
