@@ -49,8 +49,19 @@
                     auth = getAuth(app);
                     googleProvider = new GoogleAuthProvider();
                     
+                    // Configure Google provider for redirect flow
                     googleProvider.setCustomParameters({
                         prompt: 'select_account'
+                    });
+                    
+                    // Add redirect URI to ensure proper redirect handling
+                    googleProvider.addScope('email');
+                    googleProvider.addScope('profile');
+                    
+                    console.log('🔍 Google provider configured:', {
+                        providerId: googleProvider.providerId,
+                        scopes: googleProvider.getScopes(),
+                        customParameters: googleProvider.getCustomParameters()
                     });
                     
                     console.log('✅ Firebase initialized with backend config');
@@ -284,11 +295,22 @@
                         console.log('🔍 Has existing token:', !!localStorage.getItem('firebaseToken'));
                         console.log('🔍 Will check redirect result:', auth && !localStorage.getItem('firebaseToken'));
                         
+                        // Check if this looks like a redirect from Google OAuth
+                        const hasOAuthParams = window.location.search.includes('code=') || 
+                                              window.location.search.includes('state=') ||
+                                              window.location.search.includes('error=');
+                        console.log('🔍 Has OAuth parameters:', hasOAuthParams);
+                        console.log('🔍 Current URL:', window.location.href);
+                        
                         if (auth && !localStorage.getItem('firebaseToken')) {
                             try {
                                 console.log('🔍 STEP 2: Starting redirect result processing...');
                                 const { getRedirectResult } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js');
                                 console.log('🔍 STEP 3: Calling getRedirectResult...');
+                                
+                                // Check current auth state before calling getRedirectResult
+                                console.log('🔍 Current auth state:', auth.currentUser);
+                                console.log('🔍 Auth state:', auth.app.name);
                                 
                                 // Add a small delay to ensure Firebase is fully ready
                                 await new Promise(resolve => setTimeout(resolve, 100));
