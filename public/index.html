@@ -31,7 +31,7 @@
                 if (result.success && result.firebaseConfig) {
                     firebaseConfig = {
                         apiKey: result.firebaseConfig.apiKey,
-                        authDomain: "note-app-d2cb3.firebaseapp.com", // Use Firebase hosting domain for redirect auth
+                        authDomain: result.firebaseConfig.authDomain, // Use the domain from backend (Render domain)
                         projectId: result.firebaseConfig.projectId,
                         storageBucket: "rajat-s-project-ff711.firebasestorage.app",
                         messagingSenderId: "979852414023",
