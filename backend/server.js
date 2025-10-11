@@ -5,7 +5,6 @@ const morgan = require('morgan');
 const path = require('path');
 const database = require('./database');
 const { verifyFirebaseToken, isFirebaseConfigured } = require('./firebase');
-require('dotenv').config();
 
 const app = express();
 const PORT = process.env.PORT || 3000;

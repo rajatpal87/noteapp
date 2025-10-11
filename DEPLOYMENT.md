@@ -33,7 +33,51 @@ This guide will help you deploy your Note App to Render.com without Docker.
 3. Copy your **anon public** key (this is your `SUPABASE_ANON_KEY`)
 4. Save these for the next step
 
-## 🚀 **Step 2: Deploy to Render**
+## 🔐 **Step 2: Set Up Firebase Authentication**
+
+### 1. **Create Firebase Project**
+1. Go to [Firebase Console](https://console.firebase.google.com)
+2. Click **"Add project"**
+3. Enter project name: `note-app-auth`
+4. Enable Google Analytics (optional)
+5. Click **"Create project"**
+
+### 2. **Enable Google Authentication**
+1. In Firebase Console, go to **"Authentication"**
+2. Click **"Get started"**
+3. Go to **"Sign-in method"** tab
+4. Click **"Google"**
+5. Toggle **"Enable"**
+6. Enter your project support email
+7. Click **"Save"**
+
+### 3. **Get Firebase Configuration**
+1. Go to **"Project settings"** (gear icon)
+2. Scroll down to **"Your apps"**
+3. Click **"Add app"** → **"Web app"** (</>) icon
+4. Register app name: `note-app-web`
+5. Copy the Firebase config object
+6. Go to **"Service accounts"** tab
+7. Click **"Generate new private key"**
+8. Download the JSON file and save the credentials
+
+### 4. **Update Frontend Configuration**
+1. Open `public/index.html` in your repository
+2. Find the `firebaseConfig` object (around line 14)
+3. Replace with your actual Firebase configuration:
+
+```javascript
+const firebaseConfig = {
+  apiKey: "your-actual-api-key",
+  authDomain: "your-project-id.firebaseapp.com",
+  projectId: "your-actual-project-id",
+  storageBucket: "your-project-id.appspot.com",
+  messagingSenderId: "your-actual-sender-id",
+  appId: "your-actual-app-id"
+};
+```
+
+## 🚀 **Step 3: Deploy to Render**
 
 ### 1. **Connect Your GitHub Repository**
 1. Go to [render.com](https://render.com) and sign up/login
@@ -62,6 +106,14 @@ Add these environment variables in Render dashboard:
 | `PORT` | `10000` |
 | `SUPABASE_URL` | `your_supabase_project_url` |
 | `SUPABASE_ANON_KEY` | `your_supabase_anon_key` |
+| `FIREBASE_PROJECT_ID` | `your_firebase_project_id` |
+| `FIREBASE_CLIENT_EMAIL` | `your_firebase_client_email` |
+| `FIREBASE_PRIVATE_KEY` | `your_firebase_private_key` |
+
+**Important**: 
+- Replace `your_supabase_project_url` and `your_supabase_anon_key` with your actual Supabase credentials
+- Replace Firebase credentials with your actual Firebase service account details from Step 3
+- For `FIREBASE_PRIVATE_KEY`, include the full key with `-----BEGIN PRIVATE KEY-----` and `-----END PRIVATE KEY-----`
 
 ### 4. **Deploy**
 1. Click **"Create Web Service"**
