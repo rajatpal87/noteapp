@@ -75,14 +75,14 @@
                     }
                 }
                 
-                console.log('🔑 Attempting Google Sign-In...');
+                console.log('🔑 Attempting Google Sign-In with popup...');
                 
                 // Try popup first
                 try {
                     const result = await signInWithPopup(auth, googleProvider);
                     const user = result.user;
                     
-                    console.log('🔑 Sign-in successful, user details:', {
+                    console.log('🔑 Popup sign-in successful, user details:', {
                         uid: user.uid,
                         email: user.email,
                         name: user.displayName,
@@ -104,34 +104,37 @@
                     showAuthenticatedUI(user);
                     loadNotes();
                     showMessage('Successfully signed in!', 'success');
+                    return; // Exit successfully
                     
                 } catch (popupError) {
-                    console.log('Popup sign-in failed, trying redirect method...', popupError.code);
+                    console.log('❌ Popup sign-in failed:', popupError.code, popupError.message);
                     
-                    // If popup fails, try redirect
-                    showMessage('Popup blocked or closed. Redirecting to Google sign-in...', 'info');
-                    
-                    // Import signInWithRedirect
-                    const { signInWithRedirect } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js');
-                    await signInWithRedirect(auth, googleProvider);
+                    // Only try redirect for specific popup errors
+                    if (popupError.code === 'auth/popup-blocked' || 
+                        popupError.code === 'auth/popup-closed-by-user' ||
+                        popupError.code === 'auth/cancelled-popup-request') {
+                        
+                        console.log('🔄 Trying redirect method as fallback...');
+                        showMessage('Popup blocked or closed. Redirecting to Google sign-in...', 'info');
+                        
+                        // Import signInWithRedirect
+                        const { signInWithRedirect } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js');
+                        await signInWithRedirect(auth, googleProvider);
+                        return; // Exit after redirect
+                    } else {
+                        // For other errors, don't try redirect
+                        throw popupError;
+                    }
                 }
                 
             } catch (error) {
-                console.error('Google sign-in error:', error);
+                console.error('❌ Google sign-in error:', error);
                 
                 // Handle specific error cases
-                if (error.code === 'auth/popup-blocked') {
-                    showMessage('Popup blocked by browser. Redirecting to Google sign-in...', 'info');
-                    try {
-                        const { signInWithRedirect } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js');
-                        await signInWithRedirect(auth, googleProvider);
-                    } catch (redirectError) {
-                        showMessage('Sign-in failed: ' + redirectError.message, 'error');
-                    }
-                } else if (error.code === 'auth/cancelled-popup-request') {
-                    showMessage('Sign-in cancelled. Please wait and try again.', 'info');
-                } else if (error.code === 'auth/api-key-not-valid') {
+                if (error.code === 'auth/api-key-not-valid') {
                     showMessage('Authentication configuration error. Please contact support.', 'error');
+                } else if (error.code === 'auth/network-request-failed') {
+                    showMessage('Network error. Please check your connection and try again.', 'error');
                 } else {
                     showMessage('Sign-in failed: ' + error.message, 'error');
                 }
@@ -217,11 +220,14 @@
                 // Handle redirect result if needed
                 if (auth && !localStorage.getItem('firebaseToken')) {
                     try {
+                        console.log('🔄 Checking for redirect result...');
                         const { getRedirectResult } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js');
                         const redirectResult = await getRedirectResult(auth);
                         if (redirectResult && redirectResult.user) {
-                            console.log('🔄 Redirect sign-in successful:', redirectResult.user.email);
+                            console.log('✅ Redirect sign-in successful:', redirectResult.user.email);
                             const idToken = await redirectResult.user.getIdToken();
+                            console.log('🎫 Redirect ID Token obtained:', idToken.substring(0, 20) + '...');
+                            
                             localStorage.setItem('firebaseToken', idToken);
                             localStorage.setItem('user', JSON.stringify({
                                 uid: redirectResult.user.uid,
@@ -229,12 +235,17 @@
                                 name: redirectResult.user.displayName,
                                 picture: redirectResult.user.photoURL
                             }));
+                            
+                            console.log('💾 Redirect user data stored in localStorage');
                             showAuthenticatedUI(redirectResult.user);
                             loadNotes();
                             showMessage('Successfully signed in!', 'success');
+                            return; // Exit early since we're authenticated
+                        } else {
+                            console.log('ℹ️ No redirect result found');
                         }
                     } catch (redirectError) {
-                        console.log('No redirect result or error:', redirectError);
+                        console.log('❌ Redirect result error:', redirectError);
                     }
                 }
                 
