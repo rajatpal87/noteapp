@@ -3,7 +3,7 @@ const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
 const path = require('path');
-const { v4: uuidv4 } = require('uuid');
+const database = require('./database');
 require('dotenv').config();
 
 const app = express();
@@ -26,23 +26,25 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 // Serve static files
 app.use(express.static(path.join(__dirname, '../public')));
 
-// In-memory storage for notes (in production, use a database)
-let notes = [
-  {
-    id: '1',
-    title: 'Welcome to your Note App!',
-    content: 'This is your first note. You can edit, delete, or create new notes.',
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString()
-  },
-  {
-    id: '2',
-    title: 'Features Available',
-    content: '✅ Create new notes\n✅ View all notes\n✅ Edit existing notes\n✅ Delete notes\n✅ Responsive design',
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString()
+// Database connection status
+let dbStatus = {
+  connected: false,
+  error: null
+};
+
+// Check database connection on startup
+database.checkConnection().then(status => {
+  dbStatus = status;
+  if (status.connected) {
+    console.log('✅ Database connected successfully');
+  } else {
+    console.log('⚠️  Database connection failed:', status.error);
+    console.log('   App will work with limited functionality');
   }
-];
+}).catch(err => {
+  console.error('❌ Database connection error:', err);
+  dbStatus = { connected: false, error: err.message };
+});
 
 // Routes
 app.get('/', (req, res) => {
@@ -50,56 +52,102 @@ app.get('/', (req, res) => {
 });
 
 // Health check
-app.get('/api/health', (req, res) => {
-  res.json({
-    status: 'healthy',
-    uptime: process.uptime(),
-    timestamp: new Date().toISOString(),
-    totalNotes: notes.length
-  });
+app.get('/api/health', async (req, res) => {
+  try {
+    let totalNotes = 0;
+    if (dbStatus.connected) {
+      totalNotes = await database.getNotesCount();
+    }
+
+    res.json({
+      status: 'healthy',
+      uptime: process.uptime(),
+      timestamp: new Date().toISOString(),
+      database: dbStatus,
+      totalNotes: totalNotes
+    });
+  } catch (error) {
+    res.json({
+      status: 'healthy',
+      uptime: process.uptime(),
+      timestamp: new Date().toISOString(),
+      database: dbStatus,
+      totalNotes: 0,
+      warning: 'Could not get notes count'
+    });
+  }
 });
 
 // GET /api/notes - Get all notes
-app.get('/api/notes', (req, res) => {
+app.get('/api/notes', async (req, res) => {
   try {
+    if (!dbStatus.connected) {
+      return res.status(503).json({
+        success: false,
+        error: 'Database not available',
+        message: 'Please check your Supabase configuration'
+      });
+    }
+
+    const notes = await database.getAllNotes();
     res.json({
       success: true,
-      data: notes.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt)),
+      data: notes,
       total: notes.length
     });
   } catch (error) {
+    console.error('Error fetching notes:', error);
     res.status(500).json({
       success: false,
-      error: 'Failed to fetch notes'
+      error: 'Failed to fetch notes',
+      message: error.message
     });
   }
 });
 
 // GET /api/notes/:id - Get a specific note
-app.get('/api/notes/:id', (req, res) => {
+app.get('/api/notes/:id', async (req, res) => {
   try {
-    const note = notes.find(n => n.id === req.params.id);
-    if (!note) {
-      return res.status(404).json({
+    if (!dbStatus.connected) {
+      return res.status(503).json({
         success: false,
-        error: 'Note not found'
+        error: 'Database not available',
+        message: 'Please check your Supabase configuration'
       });
     }
+
+    const note = await database.getNoteById(req.params.id);
     res.json({
       success: true,
       data: note
     });
   } catch (error) {
+    console.error('Error fetching note:', error);
+    if (error.message === 'Note not found') {
+      return res.status(404).json({
+        success: false,
+        error: 'Note not found'
+      });
+    }
     res.status(500).json({
       success: false,
-      error: 'Failed to fetch note'
+      error: 'Failed to fetch note',
+      message: error.message
     });
   }
 });
 
 // POST /api/notes - Create a new note
-app.post('/api/notes', (req, res) => {
+app.post('/api/notes', async (req, res) => {
   try {
+    if (!dbStatus.connected) {
+      return res.status(503).json({
+        success: false,
+        error: 'Database not available',
+        message: 'Please check your Supabase configuration'
+      });
+    }
+
     const { title, content } = req.body;
     
     if (!title || !content) {
@@ -109,15 +157,7 @@ app.post('/api/notes', (req, res) => {
       });
     }
 
-    const newNote = {
-      id: uuidv4(),
-      title: title.trim(),
-      content: content.trim(),
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    };
-
-    notes.push(newNote);
+    const newNote = await database.createNote(title, content);
     
     res.status(201).json({
       success: true,
@@ -125,25 +165,27 @@ app.post('/api/notes', (req, res) => {
       message: 'Note created successfully'
     });
   } catch (error) {
+    console.error('Error creating note:', error);
     res.status(500).json({
       success: false,
-      error: 'Failed to create note'
+      error: 'Failed to create note',
+      message: error.message
     });
   }
 });
 
 // PUT /api/notes/:id - Update a note
-app.put('/api/notes/:id', (req, res) => {
+app.put('/api/notes/:id', async (req, res) => {
   try {
-    const { title, content } = req.body;
-    const noteIndex = notes.findIndex(n => n.id === req.params.id);
-    
-    if (noteIndex === -1) {
-      return res.status(404).json({
+    if (!dbStatus.connected) {
+      return res.status(503).json({
         success: false,
-        error: 'Note not found'
+        error: 'Database not available',
+        message: 'Please check your Supabase configuration'
       });
     }
+
+    const { title, content } = req.body;
 
     if (!title || !content) {
       return res.status(400).json({
@@ -152,39 +194,41 @@ app.put('/api/notes/:id', (req, res) => {
       });
     }
 
-    notes[noteIndex] = {
-      ...notes[noteIndex],
-      title: title.trim(),
-      content: content.trim(),
-      updatedAt: new Date().toISOString()
-    };
+    const updatedNote = await database.updateNote(req.params.id, title, content);
 
     res.json({
       success: true,
-      data: notes[noteIndex],
+      data: updatedNote,
       message: 'Note updated successfully'
     });
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      error: 'Failed to update note'
-    });
-  }
-});
-
-// DELETE /api/notes/:id - Delete a note
-app.delete('/api/notes/:id', (req, res) => {
-  try {
-    const noteIndex = notes.findIndex(n => n.id === req.params.id);
-    
-    if (noteIndex === -1) {
+    console.error('Error updating note:', error);
+    if (error.message === 'Note not found') {
       return res.status(404).json({
         success: false,
         error: 'Note not found'
       });
     }
+    res.status(500).json({
+      success: false,
+      error: 'Failed to update note',
+      message: error.message
+    });
+  }
+});
 
-    const deletedNote = notes.splice(noteIndex, 1)[0];
+// DELETE /api/notes/:id - Delete a note
+app.delete('/api/notes/:id', async (req, res) => {
+  try {
+    if (!dbStatus.connected) {
+      return res.status(503).json({
+        success: false,
+        error: 'Database not available',
+        message: 'Please check your Supabase configuration'
+      });
+    }
+
+    const deletedNote = await database.deleteNote(req.params.id);
     
     res.json({
       success: true,
@@ -192,9 +236,17 @@ app.delete('/api/notes/:id', (req, res) => {
       message: 'Note deleted successfully'
     });
   } catch (error) {
+    console.error('Error deleting note:', error);
+    if (error.message === 'Note not found') {
+      return res.status(404).json({
+        success: false,
+        error: 'Note not found'
+      });
+    }
     res.status(500).json({
       success: false,
-      error: 'Failed to delete note'
+      error: 'Failed to delete note',
+      message: error.message
     });
   }
 });

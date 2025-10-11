@@ -6,8 +6,34 @@ This guide will help you deploy your Note App to Render.com without Docker.
 
 - GitHub repository: [https://github.com/rajatpal87/noteapp](https://github.com/rajatpal87/noteapp)
 - Render account: [https://render.com](https://render.com)
+- Supabase account: [https://supabase.com](https://supabase.com)
 
-## 🎯 Quick Deployment Steps
+## 🗄️ **Step 1: Set Up Supabase Database**
+
+### 1. **Create Supabase Project**
+1. Go to [supabase.com](https://supabase.com) and sign up/login
+2. Click **"New Project"**
+3. Choose your organization and enter project details:
+   - **Name**: `note-app-db`
+   - **Database Password**: Choose a strong password
+   - **Region**: Choose closest to your users
+4. Click **"Create new project"**
+5. Wait for the project to be created (2-3 minutes)
+
+### 2. **Set Up Database Schema**
+1. In your Supabase dashboard, go to **"SQL Editor"**
+2. Click **"New Query"**
+3. Copy and paste the contents of `database/schema.sql` from your repository
+4. Click **"Run"** to execute the SQL
+5. This will create the `notes` table with sample data
+
+### 3. **Get Your Supabase Credentials**
+1. Go to **"Settings"** → **"API"**
+2. Copy your **Project URL** (this is your `SUPABASE_URL`)
+3. Copy your **anon public** key (this is your `SUPABASE_ANON_KEY`)
+4. Save these for the next step
+
+## 🚀 **Step 2: Deploy to Render**
 
 ### 1. **Connect Your GitHub Repository**
 1. Go to [render.com](https://render.com) and sign up/login
@@ -34,6 +60,8 @@ Add these environment variables in Render dashboard:
 |-----|-------|
 | `NODE_ENV` | `production` |
 | `PORT` | `10000` |
+| `SUPABASE_URL` | `your_supabase_project_url` |
+| `SUPABASE_ANON_KEY` | `your_supabase_anon_key` |
 
 ### 4. **Deploy**
 1. Click **"Create Web Service"**
