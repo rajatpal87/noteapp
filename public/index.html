@@ -758,7 +758,7 @@
         <div id="message-container"></div>
 
         <!-- Authentication Section -->
-                <div id="auth-section" class="auth-container hidden">
+                <div id="auth-section" class="auth-container">
                     <h2>🔐 Sign In Required</h2>
                     <p>Please sign in with your Google account to access your personal notes</p>
                             <button id="google-signin-button" class="google-signin-btn">
@@ -888,6 +888,17 @@
             notes = [];
             renderNotes();
             updateStats();
+            
+            // Final visibility check
+            setTimeout(() => {
+                const finalAuthSection = document.getElementById('auth-section');
+                console.log('🔍 Final auth section visibility check:', {
+                    exists: !!finalAuthSection,
+                    hidden: finalAuthSection ? finalAuthSection.classList.contains('hidden') : 'N/A',
+                    display: finalAuthSection ? getComputedStyle(finalAuthSection).display : 'N/A',
+                    visibility: finalAuthSection ? getComputedStyle(finalAuthSection).visibility : 'N/A'
+                });
+            }, 100);
         }
 
         // Load notes on page load
