@@ -52,75 +52,63 @@ try {
   });
 }
 
-// Middleware to verify Firebase ID token (TEMPORARILY DISABLED FOR TESTING)
-const verifyFirebaseToken = async (req, res, next) => {
-  try {
-    // Skip authentication for health check and login routes
-    if (req.path === '/api/health' || req.path === '/api/auth/status') {
-      return next();
-    }
+        // Middleware to verify Firebase ID token
+        const verifyFirebaseToken = async (req, res, next) => {
+          try {
+            // Skip authentication for health check and login routes
+            if (req.path === '/api/health' || req.path === '/api/auth/status') {
+              return next();
+            }
 
-    const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return res.status(401).json({
-        success: false,
-        error: 'Unauthorized',
-        message: 'No valid authorization token provided'
-      });
-    }
+            const authHeader = req.headers.authorization;
+            if (!authHeader || !authHeader.startsWith('Bearer ')) {
+              console.log('❌ No authorization header found');
+              return res.status(401).json({
+                success: false,
+                error: 'Unauthorized',
+                message: 'No valid authorization token provided'
+              });
+            }
 
-    const idToken = authHeader.split('Bearer ')[1];
-    
-    // TEMPORARY: Accept mock tokens for testing
-    if (idToken.startsWith('mock-token-')) {
-      console.log('🔧 ACCEPTING MOCK TOKEN FOR TESTING:', idToken);
-      // Extract timestamp from token to create consistent user ID
-      const timestamp = idToken.replace('mock-token-', '');
-      req.user = {
-        uid: 'test-user-' + timestamp,
-        email: 'test@example.com',
-        name: 'Test User',
-        picture: 'https://via.placeholder.com/40'
-      };
-      console.log('🔧 MOCK USER ID:', req.user.uid);
-      return next();
-    }
+            const idToken = authHeader.split('Bearer ')[1];
+            console.log('🔍 Verifying Firebase token:', idToken.substring(0, 20) + '...');
 
-    // Original Firebase verification (disabled for testing)
-    if (!firebaseAdmin) {
-      return res.status(503).json({
-        success: false,
-        error: 'Authentication service unavailable',
-        message: 'Firebase is not configured'
-      });
-    }
+            if (!firebaseAdmin) {
+              console.log('❌ Firebase Admin not initialized');
+              return res.status(503).json({
+                success: false,
+                error: 'Authentication service unavailable',
+                message: 'Firebase is not configured'
+              });
+            }
 
-    try {
-      const decodedToken = await firebaseAdmin.auth().verifyIdToken(idToken);
-      req.user = {
-        uid: decodedToken.uid,
-        email: decodedToken.email,
-        name: decodedToken.name,
-        picture: decodedToken.picture
-      };
-      next();
-    } catch (tokenError) {
-      console.error('Token verification failed:', tokenError.message);
-      return res.status(401).json({
-        success: false,
-        error: 'Invalid token',
-        message: 'The provided token is invalid or expired'
-      });
-    }
-  } catch (error) {
-    console.error('Authentication middleware error:', error);
-    return res.status(500).json({
-      success: false,
-      error: 'Authentication error',
-      message: 'An error occurred during authentication'
-    });
-  }
-};
+            try {
+              const decodedToken = await firebaseAdmin.auth().verifyIdToken(idToken);
+              console.log('✅ Token verified for user:', decodedToken.email);
+              req.user = {
+                uid: decodedToken.uid,
+                email: decodedToken.email,
+                name: decodedToken.name,
+                picture: decodedToken.picture
+              };
+              next();
+            } catch (tokenError) {
+              console.error('❌ Token verification failed:', tokenError.message);
+              return res.status(401).json({
+                success: false,
+                error: 'Invalid token',
+                message: 'The provided token is invalid or expired'
+              });
+            }
+          } catch (error) {
+            console.error('❌ Authentication middleware error:', error);
+            return res.status(500).json({
+              success: false,
+              error: 'Authentication error',
+              message: 'An error occurred during authentication'
+            });
+          }
+        };
 
 // Check if Firebase is configured
 const isFirebaseConfigured = () => {

@@ -111,35 +111,20 @@ app.get('/api/auth/status', (req, res) => {
   });
 });
 
-        // GET /api/notes - Get all notes (TEMPORARILY UNPROTECTED FOR TESTING)
-        app.get('/api/notes', async (req, res) => {
+        // GET /api/notes - Get all notes (PROTECTED)
+        app.get('/api/notes', verifyFirebaseToken, async (req, res) => {
           try {
-            console.log('🔍 GET /api/notes called - NO AUTH REQUIRED');
-            console.log('🔍 Request headers:', req.headers);
-            console.log('🔍 Request method:', req.method);
-            console.log('🔍 Request URL:', req.url);
+            console.log('🔍 GET /api/notes called - AUTH REQUIRED');
+            console.log('🔍 Authenticated user:', req.user.email);
             
-            // Use a fixed user ID for testing
-            const testUserId = 'test-user-simple';
-            console.log('🔍 Using test user ID:', testUserId);
-            
-            // Check database connection first
-            console.log('🔍 Database status:', dbStatus);
-            
-            const notes = await database.getAllNotes(testUserId);
-            console.log('🔍 Found notes:', notes.length);
-            console.log('🔍 Notes data:', JSON.stringify(notes, null, 2));
+            const notes = await database.getAllNotes(req.user.uid);
+            console.log('🔍 Found notes for user:', notes.length);
             
             res.json({
               success: true,
               data: notes,
               total: notes.length,
-              storage: dbStatus.connected ? 'database' : 'memory',
-              debug: {
-                testUserId: testUserId,
-                dbConnected: dbStatus.connected,
-                notesCount: notes.length
-              }
+              storage: dbStatus.connected ? 'database' : 'memory'
             });
           } catch (error) {
             console.error('❌ Error fetching notes:', error);
@@ -175,13 +160,12 @@ app.get('/api/notes/:id', verifyFirebaseToken, async (req, res) => {
   }
 });
 
-        // POST /api/notes - Create a new note (TEMPORARILY UNPROTECTED FOR TESTING)
-        app.post('/api/notes', async (req, res) => {
+        // POST /api/notes - Create a new note (PROTECTED)
+        app.post('/api/notes', verifyFirebaseToken, async (req, res) => {
           try {
-            console.log('🔍 POST /api/notes called - NO AUTH REQUIRED');
+            console.log('🔍 POST /api/notes called - AUTH REQUIRED');
+            console.log('🔍 Authenticated user:', req.user.email);
             console.log('🔍 Request body:', req.body);
-            console.log('🔍 Request headers:', req.headers);
-            console.log('🔍 Database status:', dbStatus);
             
             const { title, content } = req.body;
 
@@ -192,24 +176,15 @@ app.get('/api/notes/:id', verifyFirebaseToken, async (req, res) => {
               });
             }
 
-            // Use a fixed user ID for testing
-            const testUserId = 'test-user-simple';
-            console.log('🔍 Creating note with user ID:', testUserId);
-            console.log('🔍 Note data:', { title, content, userId: testUserId });
-            
-            const newNote = await database.createNote(title, content, testUserId);
-            console.log('🔍 Note created successfully:', newNote);
+            console.log('🔍 Creating note for user:', req.user.uid);
+            const newNote = await database.createNote(title, content, req.user.uid);
+            console.log('🔍 Note created successfully:', newNote.id);
 
             res.status(201).json({
               success: true,
               data: newNote,
               message: 'Note created successfully',
-              storage: dbStatus.connected ? 'database' : 'memory',
-              debug: {
-                testUserId: testUserId,
-                dbConnected: dbStatus.connected,
-                noteId: newNote.id
-              }
+              storage: dbStatus.connected ? 'database' : 'memory'
             });
           } catch (error) {
             console.error('❌ Error creating note:', error);
