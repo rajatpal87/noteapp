@@ -92,6 +92,14 @@
                         console.log('🔑 Redirecting to Google Sign-In...');
                         showMessage('Redirecting to Google sign-in...', 'info');
                         
+                        // Store redirect attempt in localStorage
+                        localStorage.setItem('debug_redirect_attempt', JSON.stringify({
+                            timestamp: new Date().toISOString(),
+                            authDomain: auth.config.authDomain,
+                            projectId: auth.config.projectId,
+                            providerId: googleProvider.providerId
+                        }));
+                        
                         // Import signInWithRedirect
                         const { signInWithRedirect } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js');
                         console.log('🔄 Calling signInWithRedirect...');
@@ -167,6 +175,7 @@
                         redirectCheck: localStorage.getItem('debug_redirect_check'),
                         oauthDetection: localStorage.getItem('debug_oauth_detection'),
                         redirectResult: localStorage.getItem('debug_redirect_result'),
+                        redirectAttempt: localStorage.getItem('debug_redirect_attempt'),
                         currentUrl: window.location.href,
                         currentTime: new Date().toISOString()
                     };
@@ -179,6 +188,8 @@ Current Time: ${debugInfo.currentTime}
 Redirect Check: ${debugInfo.redirectCheck || 'Not found'}
 
 OAuth Detection: ${debugInfo.oauthDetection || 'Not found'}
+
+Redirect Attempt: ${debugInfo.redirectAttempt || 'Not found'}
 
 Redirect Result: ${debugInfo.redirectResult || 'Not found'}
                         </pre>
