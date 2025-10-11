@@ -160,6 +160,36 @@
                     }
                 };
 
+                // Function to display debug info on page
+                window.showDebugInfo = () => {
+                    const debugContent = document.getElementById('debug-content');
+                    const debugInfo = {
+                        redirectCheck: localStorage.getItem('debug_redirect_check'),
+                        oauthDetection: localStorage.getItem('debug_oauth_detection'),
+                        redirectResult: localStorage.getItem('debug_redirect_result'),
+                        currentUrl: window.location.href,
+                        currentTime: new Date().toISOString()
+                    };
+                    
+                    debugContent.innerHTML = `
+                        <pre style="white-space: pre-wrap; font-size: 0.7rem;">
+Current URL: ${debugInfo.currentUrl}
+Current Time: ${debugInfo.currentTime}
+
+Redirect Check: ${debugInfo.redirectCheck || 'Not found'}
+
+OAuth Detection: ${debugInfo.oauthDetection || 'Not found'}
+
+Redirect Result: ${debugInfo.redirectResult || 'Not found'}
+                        </pre>
+                    `;
+                };
+
+                // Show debug info on page load
+                window.addEventListener('load', () => {
+                    setTimeout(showDebugInfo, 1000);
+                });
+
         // Listen for auth state changes (will be set up after Firebase initialization)
         function setupAuthStateListener() {
             if (auth) {
@@ -290,6 +320,17 @@
                         // Handle redirect result FIRST, before setting up auth listener
                         let redirectSuccess = false;
                         
+                        // Store debug info in localStorage to survive redirects
+                        const debugInfo = {
+                            timestamp: new Date().toISOString(),
+                            url: window.location.href,
+                            searchParams: window.location.search,
+                            hasAuth: !!auth,
+                            hasToken: !!localStorage.getItem('firebaseToken'),
+                            willCheckRedirect: auth && !localStorage.getItem('firebaseToken')
+                        };
+                        localStorage.setItem('debug_redirect_check', JSON.stringify(debugInfo));
+                        
                         console.log('🔍 STEP 1: Checking redirect conditions...');
                         console.log('🔍 Auth object exists:', !!auth);
                         console.log('🔍 Has existing token:', !!localStorage.getItem('firebaseToken'));
@@ -301,6 +342,14 @@
                                               window.location.search.includes('error=');
                         console.log('🔍 Has OAuth parameters:', hasOAuthParams);
                         console.log('🔍 Current URL:', window.location.href);
+                        
+                        // Store OAuth detection in localStorage
+                        localStorage.setItem('debug_oauth_detection', JSON.stringify({
+                            timestamp: new Date().toISOString(),
+                            hasOAuthParams: hasOAuthParams,
+                            url: window.location.href,
+                            searchParams: window.location.search
+                        }));
                         
                         if (auth && !localStorage.getItem('firebaseToken')) {
                             try {
@@ -320,6 +369,16 @@
                                 console.log('🔍 Redirect result type:', typeof redirectResult);
                                 console.log('🔍 Redirect result is null:', redirectResult === null);
                                 console.log('🔍 Redirect result:', JSON.stringify(redirectResult));
+                                
+                                // Store redirect result in localStorage for debugging
+                                localStorage.setItem('debug_redirect_result', JSON.stringify({
+                                    timestamp: new Date().toISOString(),
+                                    resultType: typeof redirectResult,
+                                    isNull: redirectResult === null,
+                                    hasUser: redirectResult && redirectResult.user ? true : false,
+                                    userEmail: redirectResult && redirectResult.user ? redirectResult.user.email : null,
+                                    fullResult: redirectResult
+                                }));
                                 
                                 // If no result, try again with a longer delay
                                 if (!redirectResult) {
@@ -891,6 +950,11 @@
                     <p style="font-size: 0.9rem; color: #666; text-align: center; margin-top: 15px;">
                         You will be redirected to Google to sign in, then returned to this page
                     </p>
+                    <div id="debug-info" style="background: #f0f0f0; padding: 10px; margin: 10px; border-radius: 5px; font-size: 0.8rem; text-align: left;">
+                        <h4>Debug Info (survives redirects):</h4>
+                        <div id="debug-content">Loading debug info...</div>
+                        <button onclick="showDebugInfo()" style="background: blue; color: white; padding: 5px; margin: 5px; border: none; border-radius: 3px;">Refresh Debug Info</button>
+                    </div>
                     <button onclick="console.log('🧪 Testing redirect result manually...'); testRedirectResult();" style="background: orange; color: white; padding: 10px; margin: 10px; border: none; border-radius: 5px;">
                         Test Redirect Result
                     </button>
