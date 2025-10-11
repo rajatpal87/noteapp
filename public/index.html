@@ -1352,6 +1352,27 @@ Redirect Result: ${debugInfo.redirectResult || 'Not found'}
         // Set up form submission when page loads
         document.addEventListener('DOMContentLoaded', function() {
             setupFormSubmission();
+            
+            // Also add direct click handler to save button as backup
+            const saveBtn = document.getElementById('save-btn');
+            if (saveBtn) {
+                console.log('✅ Setting up direct save button click handler...');
+                saveBtn.addEventListener('click', function(e) {
+                    console.log('🔘 Save button clicked directly!');
+                    e.preventDefault();
+                    
+                    // Trigger form submission manually
+                    const form = document.getElementById('note-form');
+                    if (form) {
+                        console.log('📝 Manually triggering form submission...');
+                        form.dispatchEvent(new Event('submit'));
+                    } else {
+                        console.error('❌ Form not found for manual submission');
+                    }
+                });
+            } else {
+                console.error('❌ Save button not found!');
+            }
         });
 
         // Update statistics
