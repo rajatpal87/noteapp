@@ -123,13 +123,23 @@ Currently uses in-memory storage (notes are lost when server restarts). For prod
 
 ## 🌐 Deployment
 
-### Deploy to Render
+### 🚀 **Deploy to Render (Recommended)**
 
-1. **Push to GitHub**
-2. **Connect to Render**:
+Your app is ready for Render deployment! See [DEPLOYMENT.md](./DEPLOYMENT.md) for detailed instructions.
+
+**Quick Steps**:
+1. **Connect GitHub**: Link `rajatpal87/noteapp` repository
+2. **Configure Service**:
+   - Environment: `Node`
    - Root Directory: `.` (empty)
    - Build Command: `npm install`
    - Start Command: `npm start`
+3. **Set Environment Variables**:
+   - `NODE_ENV=production`
+   - `PORT=10000`
+4. **Deploy**: Click "Create Web Service"
+
+**Your app will be live at**: `https://your-service-name.onrender.com`
 
 ### Deploy to Heroku
 
