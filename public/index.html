@@ -78,27 +78,28 @@
 
                 // Real Google Authentication
                 window.signInWithGoogle = async () => {
-                    console.log('🎯 signInWithGoogle function called!');
+                    persistentLog.add('signInWithGoogle function called!', 'info');
                     
                     try {
                         if (!auth) {
+                            persistentLog.add('Firebase not initialized, initializing...', 'warning');
                             const initialized = await initializeFirebase();
                             if (!initialized) {
                                 throw new Error('Firebase not initialized');
                             }
                         }
                         
-                        console.log('🔑 Starting Google authentication...');
+                        persistentLog.add('Starting Google authentication...', 'info');
                         showMessage('Redirecting to Google for authentication...', 'info');
                         
                         // Use redirect-based authentication for better reliability
                         const { signInWithRedirect } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js');
                         await signInWithRedirect(auth, googleProvider);
                         
-                        console.log('✅ Redirect initiated successfully');
+                        persistentLog.add('Redirect initiated successfully', 'success');
                         
                     } catch (error) {
-                        console.error('❌ Google authentication error:', error);
+                        persistentLog.add('Google authentication error: ' + error.message, 'error');
                         showMessage('Authentication failed: ' + error.message, 'error');
                     }
                 };
@@ -178,43 +179,80 @@
                     }
                 };
 
+                // Persistent logging system
+                const persistentLog = {
+                    logs: [],
+                    maxLogs: 50,
+                    
+                    add: function(message, type = 'info') {
+                        const logEntry = {
+                            timestamp: new Date().toISOString(),
+                            type: type,
+                            message: message
+                        };
+                        
+                        this.logs.push(logEntry);
+                        
+                        // Keep only the last maxLogs entries
+                        if (this.logs.length > this.maxLogs) {
+                            this.logs = this.logs.slice(-this.maxLogs);
+                        }
+                        
+                        // Store in localStorage
+                        localStorage.setItem('persistent_logs', JSON.stringify(this.logs));
+                        
+                        // Also log to console
+                        console.log(`[${type.toUpperCase()}] ${message}`);
+                    },
+                    
+                    load: function() {
+                        const stored = localStorage.getItem('persistent_logs');
+                        if (stored) {
+                            try {
+                                this.logs = JSON.parse(stored);
+                            } catch (e) {
+                                this.logs = [];
+                            }
+                        }
+                    },
+                    
+                    clear: function() {
+                        this.logs = [];
+                        localStorage.removeItem('persistent_logs');
+                    },
+                    
+                    display: function() {
+                        const debugContent = document.getElementById('debug-content');
+                        if (!debugContent) return;
+                        
+                        let html = '<pre style="white-space: pre-wrap; font-size: 0.7rem; max-height: 300px; overflow-y: auto;">';
+                        html += `Current URL: ${window.location.href}\n`;
+                        html += `Current Time: ${new Date().toISOString()}\n`;
+                        html += `Log Entries: ${this.logs.length}\n\n`;
+                        
+                        this.logs.forEach(log => {
+                            const typeColor = {
+                                'info': '#2196F3',
+                                'success': '#4CAF50',
+                                'error': '#F44336',
+                                'warning': '#FF9800'
+                            }[log.type] || '#666';
+                            
+                            html += `<span style="color: ${typeColor};">[${log.timestamp}] [${log.type.toUpperCase()}] ${log.message}</span>\n`;
+                        });
+                        
+                        html += '</pre>';
+                        debugContent.innerHTML = html;
+                    }
+                };
+
                 // Function to display debug info on page
                 window.showDebugInfo = () => {
-                    const debugContent = document.getElementById('debug-content');
-                    const debugInfo = {
-                        redirectCheck: localStorage.getItem('debug_redirect_check'),
-                        oauthDetection: localStorage.getItem('debug_oauth_detection'),
-                        redirectResult: localStorage.getItem('debug_redirect_result'),
-                        redirectAttempt: localStorage.getItem('debug_redirect_attempt'),
-                        signinAttempt: localStorage.getItem('debug_signin_attempt'),
-                        popupSuccess: localStorage.getItem('debug_popup_success'),
-                        popupError: localStorage.getItem('debug_popup_error'),
-                        authStateChange: localStorage.getItem('debug_auth_state_change'),
-                        currentUrl: window.location.href,
-                        currentTime: new Date().toISOString()
-                    };
-                    
-                    debugContent.innerHTML = `
-                        <pre style="white-space: pre-wrap; font-size: 0.7rem;">
-Current URL: ${debugInfo.currentUrl}
-Current Time: ${debugInfo.currentTime}
-
-Sign-in Attempt: ${debugInfo.signinAttempt || 'Not found'}
-
-Popup Success: ${debugInfo.popupSuccess || 'Not found'}
-
-Popup Error: ${debugInfo.popupError || 'Not found'}
-
-Auth State Change: ${debugInfo.authStateChange || 'Not found'}
-
-Redirect Check: ${debugInfo.redirectCheck || 'Not found'}
-
-OAuth Detection: ${debugInfo.oauthDetection || 'Not found'}
-
-Redirect Result: ${debugInfo.redirectResult || 'Not found'}
-                        </pre>
-                    `;
+                    persistentLog.display();
                 };
+
+                // Load existing logs on page load
+                persistentLog.load();
 
                 // Show debug info on page load
                 window.addEventListener('load', () => {
@@ -224,24 +262,23 @@ Redirect Result: ${debugInfo.redirectResult || 'Not found'}
         // Listen for auth state changes (will be set up after Firebase initialization)
         function setupAuthStateListener() {
             if (auth) {
-                console.log('🔔 Setting up Firebase auth state listener...');
-                console.log('🔍 Current auth state before listener:', auth.currentUser);
+                persistentLog.add('Setting up Firebase auth state listener...', 'info');
+                persistentLog.add('Current auth state before listener: ' + (auth.currentUser ? auth.currentUser.email : 'null'), 'info');
                 
                 auth.onAuthStateChanged((user) => {
-                    console.log('🔄 Auth state changed:', user ? 'User signed in' : 'User signed out');
-                    console.log('🔍 User object:', user);
+                    persistentLog.add('Auth state changed: ' + (user ? 'User signed in (' + user.email + ')' : 'User signed out'), 'info');
                     
                     if (user) {
-                        console.log('👤 User details:', {
+                        persistentLog.add('User details: ' + JSON.stringify({
                             uid: user.uid,
                             email: user.email,
                             name: user.displayName,
                             emailVerified: user.emailVerified
-                        });
+                        }), 'info');
                         
                         // Store user data in localStorage
                         user.getIdToken().then(token => {
-                            console.log('🎫 Getting fresh ID token...');
+                            persistentLog.add('Getting fresh ID token...', 'info');
                             localStorage.setItem('firebaseToken', token);
                             localStorage.setItem('user', JSON.stringify({
                                 uid: user.uid,
@@ -250,26 +287,26 @@ Redirect Result: ${debugInfo.redirectResult || 'Not found'}
                                 picture: user.photoURL
                             }));
                             localStorage.setItem('authExpiry', (Date.now() + 24 * 60 * 60 * 1000).toString()); // 24 hours
-                            console.log('💾 User data stored in localStorage');
+                            persistentLog.add('User data stored in localStorage', 'success');
                             
                             showAuthenticatedUI(user);
                             loadNotes();
                         }).catch(error => {
-                            console.error('❌ Error getting ID token:', error);
+                            persistentLog.add('Error getting ID token: ' + error.message, 'error');
                             showMessage('Error getting authentication token: ' + error.message, 'error');
                         });
                     } else {
-                        console.log('❌ No user, checking if we should clear localStorage...');
+                        persistentLog.add('No user, checking localStorage...', 'warning');
                         // Only clear localStorage if there's no valid stored token
                         const existingToken = localStorage.getItem('firebaseToken');
                         const existingUser = localStorage.getItem('user');
                         
                         if (existingToken && existingUser) {
-                            console.log('🔍 Found existing credentials, keeping localStorage intact');
+                            persistentLog.add('Found existing credentials, keeping localStorage intact', 'info');
                             // Don't clear localStorage immediately, just show unauthenticated UI
                             showUnauthenticatedUI();
                         } else {
-                            console.log('🧹 No existing credentials, clearing localStorage');
+                            persistentLog.add('No existing credentials, clearing localStorage', 'warning');
                             localStorage.removeItem('firebaseToken');
                             localStorage.removeItem('user');
                             localStorage.removeItem('authExpiry');
@@ -281,24 +318,24 @@ Redirect Result: ${debugInfo.redirectResult || 'Not found'}
                 // Check for redirect result with retry mechanism
                 checkRedirectResultWithRetry();
             } else {
-                console.error('❌ Cannot setup auth listener - auth object not available');
+                persistentLog.add('Cannot setup auth listener - auth object not available', 'error');
             }
         }
 
                 // Check for redirect result from Google authentication
         async function checkRedirectResult() {
             try {
-                console.log('🔍 Checking for redirect result...');
+                persistentLog.add('Checking for redirect result...', 'info');
                 const { getRedirectResult } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js');
                 const result = await getRedirectResult(auth);
                 
                 if (result && result.user) {
-                    console.log('✅ Redirect result found:', result.user.email);
-                    console.log('🔍 Redirect result details:', {
+                    persistentLog.add('Redirect result found: ' + result.user.email, 'success');
+                    persistentLog.add('Redirect result details: ' + JSON.stringify({
                         user: result.user.email,
                         credential: result.credential ? 'present' : 'missing',
                         operationType: result.operationType
-                    });
+                    }), 'info');
                     
                     // Store user data immediately
                     const idToken = await result.user.getIdToken();
@@ -311,16 +348,16 @@ Redirect Result: ${debugInfo.redirectResult || 'Not found'}
                     }));
                     localStorage.setItem('authExpiry', (Date.now() + 24 * 60 * 60 * 1000).toString());
                     
-                    console.log('💾 User data stored from redirect result');
+                    persistentLog.add('User data stored from redirect result', 'success');
                     
                     // Show authenticated UI
                     showAuthenticatedUI(result.user);
                     loadNotes();
                 } else {
-                    console.log('🔍 No redirect result found');
+                    persistentLog.add('No redirect result found', 'warning');
                 }
             } catch (error) {
-                console.error('❌ Error checking redirect result:', error);
+                persistentLog.add('Error checking redirect result: ' + error.message, 'error');
                 showMessage('Authentication error: ' + error.message, 'error');
             }
         }
@@ -332,23 +369,23 @@ Redirect Result: ${debugInfo.redirectResult || 'Not found'}
             
             while (attempts < maxAttempts) {
                 try {
-                    console.log(`🔍 Checking for redirect result (attempt ${attempts + 1}/${maxAttempts})...`);
+                    persistentLog.add(`Checking for redirect result (attempt ${attempts + 1}/${maxAttempts})...`, 'info');
                     await checkRedirectResult();
                     
                     // Check if we found a redirect result
                     const result = await getRedirectResult(auth);
                     if (result && result.user) {
-                        console.log('✅ Redirect result found and processed');
+                        persistentLog.add('Redirect result found and processed', 'success');
                         return;
                     }
                     
                     attempts++;
                     if (attempts < maxAttempts) {
-                        console.log(`⏳ No redirect result found, retrying in ${attempts * 1000}ms...`);
+                        persistentLog.add(`No redirect result found, retrying in ${attempts * 1000}ms...`, 'warning');
                         await new Promise(resolve => setTimeout(resolve, attempts * 1000));
                     }
                 } catch (error) {
-                    console.error(`❌ Error checking redirect result (attempt ${attempts + 1}):`, error);
+                    persistentLog.add(`Error checking redirect result (attempt ${attempts + 1}): ${error.message}`, 'error');
                     attempts++;
                     if (attempts < maxAttempts) {
                         await new Promise(resolve => setTimeout(resolve, attempts * 1000));
@@ -356,7 +393,7 @@ Redirect Result: ${debugInfo.redirectResult || 'Not found'}
                 }
             }
             
-            console.log('🔍 No redirect result found after all attempts');
+            persistentLog.add('No redirect result found after all attempts', 'warning');
         }
 
         // Helper function to get redirect result
@@ -1095,7 +1132,8 @@ Redirect Result: ${debugInfo.redirectResult || 'Not found'}
                     <div id="debug-info" style="background: #f0f0f0; padding: 10px; margin: 10px; border-radius: 5px; font-size: 0.8rem; text-align: left;">
                         <h4>Debug Info (survives redirects):</h4>
                         <div id="debug-content">Loading debug info...</div>
-                        <button onclick="alert('Button clicked!'); console.log('🔄 Refreshing debug info...'); if(typeof showDebugInfo === 'function') { showDebugInfo(); } else { console.error('showDebugInfo function not found'); }" style="background: blue; color: white; padding: 5px; margin: 5px; border: none; border-radius: 3px; cursor: pointer;">Refresh Debug Info</button>
+                                <button onclick="alert('Button clicked!'); console.log('🔄 Refreshing debug info...'); if(typeof showDebugInfo === 'function') { showDebugInfo(); } else { console.error('showDebugInfo function not found'); }" style="background: blue; color: white; padding: 5px; margin: 5px; border: none; border-radius: 3px; cursor: pointer;">Refresh Debug Info</button>
+                                <button onclick="if(typeof persistentLog !== 'undefined') { persistentLog.clear(); persistentLog.add('Logs cleared by user', 'info'); showDebugInfo(); } else { console.error('persistentLog not found'); }" style="background: red; color: white; padding: 5px; margin: 5px; border: none; border-radius: 3px; cursor: pointer;">Clear Logs</button>
                     </div>
                     <button onclick="alert('Redirect test clicked!'); console.log('🧪 Testing redirect result manually...'); if(typeof testRedirectResult === 'function') { testRedirectResult(); } else { console.error('testRedirectResult function not found'); }" style="background: orange; color: white; padding: 10px; margin: 10px; border: none; border-radius: 5px; cursor: pointer;">
                         Test Redirect Result
