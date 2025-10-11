@@ -82,10 +82,23 @@ app.get('/api/health', async (req, res) => {
 
 // Authentication status endpoint
 app.get('/api/auth/status', (req, res) => {
+  const config = {
+    projectId: process.env.FIREBASE_PROJECT_ID,
+    authDomain: process.env.FIREBASE_AUTH_DOMAIN,
+    apiKey: process.env.FIREBASE_API_KEY
+  };
+  
+  console.log('Firebase Config Check:', {
+    projectId: config.projectId ? '✅ Set' : '❌ Missing',
+    authDomain: config.authDomain ? '✅ Set' : '❌ Missing', 
+    apiKey: config.apiKey ? '✅ Set' : '❌ Missing'
+  });
+  
   res.json({
     success: true,
     firebaseConfigured: isFirebaseConfigured(),
-    authenticationRequired: true
+    authenticationRequired: true,
+    firebaseConfig: config
   });
 });
 

@@ -4,10 +4,11 @@ const admin = require('firebase-admin');
 let firebaseAdmin = null;
 
 try {
-  // Check if Firebase credentials are available from Render environment variables
-  if (process.env.FIREBASE_PROJECT_ID && 
-      process.env.FIREBASE_CLIENT_EMAIL && 
-      process.env.FIREBASE_PRIVATE_KEY) {
+        // Check if Firebase credentials are available from Render environment variables
+        if (process.env.FIREBASE_PROJECT_ID &&
+            process.env.FIREBASE_AUTH_DOMAIN &&
+            process.env.FIREBASE_CLIENT_EMAIL &&
+            process.env.FIREBASE_PRIVATE_KEY) {
     
     const serviceAccount = {
       type: "service_account",
@@ -29,8 +30,8 @@ try {
 
     console.log('✅ Firebase Admin SDK initialized successfully');
   } else {
-    console.log('⚠️  Firebase credentials not found in environment variables. Authentication will be disabled.');
-    console.log('   Required: FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL, FIREBASE_PRIVATE_KEY');
+            console.log('⚠️  Firebase credentials not found in environment variables. Authentication will be disabled.');
+            console.log('   Required: FIREBASE_PROJECT_ID, FIREBASE_AUTH_DOMAIN, FIREBASE_CLIENT_EMAIL, FIREBASE_PRIVATE_KEY');
   }
 } catch (error) {
   console.error('❌ Firebase Admin SDK initialization failed:', error.message);
