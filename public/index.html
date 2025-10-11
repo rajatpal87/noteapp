@@ -56,9 +56,12 @@
             box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
             backdrop-filter: blur(10px);
             border: 1px solid rgba(255, 255, 255, 0.18);
-            height: 500px;
+            height: 500px !important;
+            min-height: 500px !important;
+            max-height: 500px !important;
             display: flex;
             flex-direction: column;
+            overflow: hidden;
         }
 
         .notes-list h2 {
@@ -70,6 +73,8 @@
         #notes-container {
             flex: 1;
             overflow-y: auto;
+            overflow-x: hidden;
+            max-height: calc(500px - 100px);
         }
 
         .note-item {
@@ -166,9 +171,12 @@
             box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
             backdrop-filter: blur(10px);
             border: 1px solid rgba(255, 255, 255, 0.18);
-            height: 500px;
+            height: 500px !important;
+            min-height: 500px !important;
+            max-height: 500px !important;
             display: flex;
             flex-direction: column;
+            overflow: hidden;
         }
 
         .note-editor h2 {
