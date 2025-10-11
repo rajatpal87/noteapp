@@ -179,6 +179,9 @@
                     }
                 };
 
+                // Basic JavaScript test
+                console.log('🚀 JavaScript is starting to load...');
+                
                 // Persistent logging system
                 const persistentLog = {
                     logs: [],
@@ -252,54 +255,111 @@
                 };
 
                 // Load existing logs on page load
-                persistentLog.load();
+                try {
+                    persistentLog.load();
+                    console.log('✅ Persistent logging system loaded');
+                } catch (error) {
+                    console.error('❌ Error loading persistent logging:', error);
+                }
 
                 // Show debug info on page load
                 window.addEventListener('load', () => {
-                    setTimeout(showDebugInfo, 1000);
+                    console.log('🔄 Page load event fired');
                     
-                    // Set up button event listeners
-                    const refreshBtn = document.getElementById('refresh-debug-btn');
-                    const clearBtn = document.getElementById('clear-logs-btn');
-                    const testBtn = document.getElementById('test-js-btn');
-                    
-                    if (refreshBtn) {
-                        refreshBtn.addEventListener('click', () => {
-                            persistentLog.add('Refresh debug button clicked', 'info');
-                            showDebugInfo();
+                    try {
+                        setTimeout(() => {
+                            try {
+                                showDebugInfo();
+                                console.log('✅ Debug info displayed');
+                            } catch (error) {
+                                console.error('❌ Error showing debug info:', error);
+                            }
+                        }, 1000);
+                        
+                        // Set up button event listeners
+                        console.log('🔧 Setting up button event listeners...');
+                        const refreshBtn = document.getElementById('refresh-debug-btn');
+                        const clearBtn = document.getElementById('clear-logs-btn');
+                        const testBtn = document.getElementById('test-js-btn');
+                        
+                        console.log('🔍 Button elements found:', {
+                            refreshBtn: !!refreshBtn,
+                            clearBtn: !!clearBtn,
+                            testBtn: !!testBtn
                         });
-                    }
                     
-                    if (clearBtn) {
-                        clearBtn.addEventListener('click', () => {
-                            persistentLog.clear();
-                            persistentLog.add('Logs cleared by user', 'info');
-                            showDebugInfo();
-                        });
-                    }
-                    
-                    if (testBtn) {
-                        testBtn.addEventListener('click', () => {
-                            alert('JavaScript is working!');
-                            persistentLog.add('Test JS button clicked - JavaScript is working', 'success');
-                            showDebugInfo();
-                        });
-                    }
-                    
-                    // Test if JavaScript is working
-                    persistentLog.add('Page loaded, JavaScript is working', 'success');
-                    
-                    // Also set up Google sign-in button
-                    const googleBtn = document.getElementById('google-signin-button');
-                    if (googleBtn) {
-                        googleBtn.addEventListener('click', (e) => {
-                            e.preventDefault();
-                            persistentLog.add('Google sign-in button clicked', 'info');
-                            signInWithGoogle();
-                        });
-                        persistentLog.add('Google sign-in button event listener set up', 'success');
-                    } else {
-                        persistentLog.add('Google sign-in button not found!', 'error');
+                        if (refreshBtn) {
+                            refreshBtn.addEventListener('click', () => {
+                                console.log('🔄 Refresh button clicked');
+                                try {
+                                    persistentLog.add('Refresh debug button clicked', 'info');
+                                    showDebugInfo();
+                                } catch (error) {
+                                    console.error('❌ Error in refresh button:', error);
+                                }
+                            });
+                            console.log('✅ Refresh button listener set up');
+                        }
+                        
+                        if (clearBtn) {
+                            clearBtn.addEventListener('click', () => {
+                                console.log('🧹 Clear button clicked');
+                                try {
+                                    persistentLog.clear();
+                                    persistentLog.add('Logs cleared by user', 'info');
+                                    showDebugInfo();
+                                } catch (error) {
+                                    console.error('❌ Error in clear button:', error);
+                                }
+                            });
+                            console.log('✅ Clear button listener set up');
+                        }
+                        
+                        if (testBtn) {
+                            testBtn.addEventListener('click', () => {
+                                console.log('🧪 Test button clicked');
+                                try {
+                                    alert('JavaScript is working!');
+                                    persistentLog.add('Test JS button clicked - JavaScript is working', 'success');
+                                    showDebugInfo();
+                                } catch (error) {
+                                    console.error('❌ Error in test button:', error);
+                                    alert('Error: ' + error.message);
+                                }
+                            });
+                            console.log('✅ Test button listener set up');
+                        }
+                        
+                        // Test if JavaScript is working
+                        try {
+                            persistentLog.add('Page loaded, JavaScript is working', 'success');
+                            console.log('✅ Persistent log added');
+                        } catch (error) {
+                            console.error('❌ Error adding persistent log:', error);
+                        }
+                        
+                        // Also set up Google sign-in button
+                        const googleBtn = document.getElementById('google-signin-button');
+                        if (googleBtn) {
+                            googleBtn.addEventListener('click', (e) => {
+                                console.log('🔑 Google sign-in button clicked');
+                                e.preventDefault();
+                                try {
+                                    persistentLog.add('Google sign-in button clicked', 'info');
+                                    signInWithGoogle();
+                                } catch (error) {
+                                    console.error('❌ Error in Google sign-in:', error);
+                                }
+                            });
+                            persistentLog.add('Google sign-in button event listener set up', 'success');
+                            console.log('✅ Google sign-in button listener set up');
+                        } else {
+                            persistentLog.add('Google sign-in button not found!', 'error');
+                            console.error('❌ Google sign-in button not found');
+                        }
+                        
+                    } catch (error) {
+                        console.error('❌ Error in page load handler:', error);
                     }
                 });
 
@@ -1179,6 +1239,7 @@
                                 <button id="refresh-debug-btn" style="background: blue; color: white; padding: 5px; margin: 5px; border: none; border-radius: 3px; cursor: pointer;">Refresh Debug Info</button>
                                 <button id="clear-logs-btn" style="background: red; color: white; padding: 5px; margin: 5px; border: none; border-radius: 3px; cursor: pointer;">Clear Logs</button>
                                 <button id="test-js-btn" style="background: green; color: white; padding: 5px; margin: 5px; border: none; border-radius: 3px; cursor: pointer;">Test JS</button>
+                                <button onclick="alert('Simple onclick works!'); console.log('Simple onclick test');" style="background: purple; color: white; padding: 5px; margin: 5px; border: none; border-radius: 3px; cursor: pointer;">Simple Test</button>
                     </div>
                     <button onclick="alert('Redirect test clicked!'); console.log('🧪 Testing redirect result manually...'); if(typeof testRedirectResult === 'function') { testRedirectResult(); } else { console.error('testRedirectResult function not found'); }" style="background: orange; color: white; padding: 10px; margin: 10px; border: none; border-radius: 5px; cursor: pointer;">
                         Test Redirect Result
