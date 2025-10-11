@@ -234,84 +234,9 @@ Redirect Result: ${debugInfo.redirectResult || 'Not found'}
 
         // Listen for auth state changes (will be set up after Firebase initialization)
         function setupAuthStateListener() {
-            if (auth) {
-                console.log('🔔 Setting up Firebase auth state listener...');
-                console.log('🔍 Current auth state before listener:', auth.currentUser);
-                
-                auth.onAuthStateChanged((user) => {
-                    console.log('🔄 Auth state changed:', user ? 'User signed in' : 'User signed out');
-                    console.log('🔍 User object:', user);
-                    console.log('🔍 User type:', typeof user);
-                    console.log('🔍 User is null:', user === null);
-                    console.log('🔍 User is undefined:', user === undefined);
-                    
-                    // Store auth state change in localStorage for debugging
-                    localStorage.setItem('debug_auth_state_change', JSON.stringify({
-                        timestamp: new Date().toISOString(),
-                        hasUser: !!user,
-                        userEmail: user ? user.email : null,
-                        userUid: user ? user.uid : null,
-                        userObject: user ? {
-                            uid: user.uid,
-                            email: user.email,
-                            displayName: user.displayName,
-                            emailVerified: user.emailVerified
-                        } : null
-                    }));
-                    
-                    if (user) {
-                        console.log('👤 User details:', {
-                            uid: user.uid,
-                            email: user.email,
-                            name: user.displayName,
-                            emailVerified: user.emailVerified
-                        });
-                        
-                        // Store user data in localStorage
-                        user.getIdToken().then(token => {
-                            console.log('🎫 Getting fresh ID token...');
-                            console.log('🎫 Token type:', typeof token);
-                            console.log('🎫 Token length:', token.length);
-                            localStorage.setItem('firebaseToken', token);
-                            localStorage.setItem('user', JSON.stringify({
-                                uid: user.uid,
-                                email: user.email,
-                                name: user.displayName,
-                                picture: user.photoURL
-                            }));
-                            console.log('💾 User data stored in localStorage');
-                            
-                            showAuthenticatedUI(user);
-                            loadNotes();
-                        }).catch(error => {
-                            console.error('❌ Error getting ID token:', error);
-                            showMessage('Error getting authentication token: ' + error.message, 'error');
-                        });
-                    } else {
-                        console.log('❌ No user, checking if we should clear localStorage...');
-                        // Only clear localStorage if there's no valid token
-                        const existingToken = localStorage.getItem('firebaseToken');
-                        if (existingToken) {
-                            console.log('🔍 Found existing token, keeping localStorage intact');
-                            // Don't clear localStorage, just show unauthenticated UI
-                            showUnauthenticatedUI();
-                        } else {
-                            console.log('🧹 No existing token, clearing localStorage');
-                            localStorage.removeItem('firebaseToken');
-                            localStorage.removeItem('user');
-                            showUnauthenticatedUI();
-                        }
-                    }
-                });
-                
-                // Also check current auth state immediately
-                console.log('🔍 Immediate auth state check:', auth.currentUser);
-                if (auth.currentUser) {
-                    console.log('🔍 Found current user immediately:', auth.currentUser.email);
-                }
-            } else {
-                console.error('❌ Cannot setup auth listener - auth object not available');
-            }
+            console.log('🔔 Auth state listener DISABLED for testing - using mock auth only');
+            // Firebase auth listener disabled to prevent interference with mock authentication
+            return;
         }
 
                 // Test function accessibility

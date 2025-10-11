@@ -111,30 +111,45 @@ app.get('/api/auth/status', (req, res) => {
   });
 });
 
-// GET /api/notes - Get all notes (TEMPORARILY UNPROTECTED FOR TESTING)
-app.get('/api/notes', async (req, res) => {
-  try {
-    console.log('🔍 GET /api/notes called - NO AUTH REQUIRED');
-    // Use a fixed user ID for testing
-    const testUserId = 'test-user-simple';
-    console.log('🔍 Using test user ID:', testUserId);
-    const notes = await database.getAllNotes(testUserId);
-    console.log('🔍 Found notes:', notes.length);
-    res.json({
-      success: true,
-      data: notes,
-      total: notes.length,
-      storage: dbStatus.connected ? 'database' : 'memory'
-    });
-  } catch (error) {
-    console.error('❌ Error fetching notes:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Failed to fetch notes',
-      message: error.message
-    });
-  }
-});
+        // GET /api/notes - Get all notes (TEMPORARILY UNPROTECTED FOR TESTING)
+        app.get('/api/notes', async (req, res) => {
+          try {
+            console.log('🔍 GET /api/notes called - NO AUTH REQUIRED');
+            console.log('🔍 Request headers:', req.headers);
+            console.log('🔍 Request method:', req.method);
+            console.log('🔍 Request URL:', req.url);
+            
+            // Use a fixed user ID for testing
+            const testUserId = 'test-user-simple';
+            console.log('🔍 Using test user ID:', testUserId);
+            
+            // Check database connection first
+            console.log('🔍 Database status:', dbStatus);
+            
+            const notes = await database.getAllNotes(testUserId);
+            console.log('🔍 Found notes:', notes.length);
+            console.log('🔍 Notes data:', JSON.stringify(notes, null, 2));
+            
+            res.json({
+              success: true,
+              data: notes,
+              total: notes.length,
+              storage: dbStatus.connected ? 'database' : 'memory',
+              debug: {
+                testUserId: testUserId,
+                dbConnected: dbStatus.connected,
+                notesCount: notes.length
+              }
+            });
+          } catch (error) {
+            console.error('❌ Error fetching notes:', error);
+            res.status(500).json({
+              success: false,
+              error: 'Failed to fetch notes',
+              message: error.message
+            });
+          }
+        });
 
 // GET /api/notes/:id - Get a specific note (Protected)
 app.get('/api/notes/:id', verifyFirebaseToken, async (req, res) => {
@@ -160,42 +175,51 @@ app.get('/api/notes/:id', verifyFirebaseToken, async (req, res) => {
   }
 });
 
-// POST /api/notes - Create a new note (TEMPORARILY UNPROTECTED FOR TESTING)
-app.post('/api/notes', async (req, res) => {
-  try {
-    console.log('🔍 POST /api/notes called - NO AUTH REQUIRED');
-    console.log('🔍 Request body:', req.body);
-    
-    const { title, content } = req.body;
+        // POST /api/notes - Create a new note (TEMPORARILY UNPROTECTED FOR TESTING)
+        app.post('/api/notes', async (req, res) => {
+          try {
+            console.log('🔍 POST /api/notes called - NO AUTH REQUIRED');
+            console.log('🔍 Request body:', req.body);
+            console.log('🔍 Request headers:', req.headers);
+            console.log('🔍 Database status:', dbStatus);
+            
+            const { title, content } = req.body;
 
-    if (!title || !content) {
-      return res.status(400).json({
-        success: false,
-        error: 'Title and content are required'
-      });
-    }
+            if (!title || !content) {
+              return res.status(400).json({
+                success: false,
+                error: 'Title and content are required'
+              });
+            }
 
-    // Use a fixed user ID for testing
-    const testUserId = 'test-user-simple';
-    console.log('🔍 Creating note with user ID:', testUserId);
-    const newNote = await database.createNote(title, content, testUserId);
-    console.log('🔍 Note created:', newNote);
+            // Use a fixed user ID for testing
+            const testUserId = 'test-user-simple';
+            console.log('🔍 Creating note with user ID:', testUserId);
+            console.log('🔍 Note data:', { title, content, userId: testUserId });
+            
+            const newNote = await database.createNote(title, content, testUserId);
+            console.log('🔍 Note created successfully:', newNote);
 
-    res.status(201).json({
-      success: true,
-      data: newNote,
-      message: 'Note created successfully',
-      storage: dbStatus.connected ? 'database' : 'memory'
-    });
-  } catch (error) {
-    console.error('❌ Error creating note:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Failed to create note',
-      message: error.message
-    });
-  }
-});
+            res.status(201).json({
+              success: true,
+              data: newNote,
+              message: 'Note created successfully',
+              storage: dbStatus.connected ? 'database' : 'memory',
+              debug: {
+                testUserId: testUserId,
+                dbConnected: dbStatus.connected,
+                noteId: newNote.id
+              }
+            });
+          } catch (error) {
+            console.error('❌ Error creating note:', error);
+            res.status(500).json({
+              success: false,
+              error: 'Failed to create note',
+              message: error.message
+            });
+          }
+        });
 
 // PUT /api/notes/:id - Update a note (Protected)
 app.put('/api/notes/:id', verifyFirebaseToken, async (req, res) => {
