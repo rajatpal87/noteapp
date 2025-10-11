@@ -102,25 +102,49 @@
                     }
                 };
 
-        window.signOutUser = async () => {
-            try {
-                if (!auth) {
-                    const initialized = await initializeFirebase();
-                    if (!initialized) {
-                        throw new Error('Firebase not initialized');
+                window.signOutUser = async () => {
+                    try {
+                        if (!auth) {
+                            const initialized = await initializeFirebase();
+                            if (!initialized) {
+                                throw new Error('Firebase not initialized');
+                            }
+                        }
+                        
+                        await signOut(auth);
+                        localStorage.removeItem('firebaseToken');
+                        localStorage.removeItem('user');
+                        showUnauthenticatedUI();
+                        showMessage('Successfully signed out!', 'success');
+                    } catch (error) {
+                        console.error('Sign-out error:', error);
+                        showMessage('Sign-out failed: ' + error.message, 'error');
                     }
-                }
-                
-                await signOut(auth);
-                localStorage.removeItem('firebaseToken');
-                localStorage.removeItem('user');
-                showUnauthenticatedUI();
-                showMessage('Successfully signed out!', 'success');
-            } catch (error) {
-                console.error('Sign-out error:', error);
-                showMessage('Sign-out failed: ' + error.message, 'error');
-            }
-        };
+                };
+
+                // Test function to manually check redirect result
+                window.testRedirectResult = async () => {
+                    try {
+                        console.log('🧪 Manual redirect result test...');
+                        if (!auth) {
+                            console.log('❌ Auth not initialized');
+                            return;
+                        }
+                        
+                        const { getRedirectResult } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js');
+                        console.log('🧪 Calling getRedirectResult manually...');
+                        const result = await getRedirectResult(auth);
+                        console.log('🧪 Manual redirect result:', result);
+                        
+                        if (result && result.user) {
+                            console.log('🧪 Manual test found user:', result.user.email);
+                        } else {
+                            console.log('🧪 Manual test: no redirect result found');
+                        }
+                    } catch (error) {
+                        console.error('🧪 Manual test error:', error);
+                    }
+                };
 
         // Listen for auth state changes (will be set up after Firebase initialization)
         function setupAuthStateListener() {
@@ -244,6 +268,9 @@
                 const urlParams = new URLSearchParams(window.location.search);
                 const isRedirect = urlParams.get('redirect') === 'true';
                 console.log('🔄 Is redirect from Google:', isRedirect);
+                console.log('🔍 Current URL:', window.location.href);
+                console.log('🔍 URL search params:', window.location.search);
+                console.log('🔍 All URL params:', Object.fromEntries(urlParams.entries()));
                 
                         // Handle redirect result FIRST, before setting up auth listener
                         let redirectSuccess = false;
@@ -781,6 +808,9 @@
                     <p style="font-size: 0.9rem; color: #666; text-align: center; margin-top: 15px;">
                         You will be redirected to Google to sign in, then returned to this page
                     </p>
+                    <button onclick="console.log('🧪 Testing redirect result manually...'); testRedirectResult();" style="background: orange; color: white; padding: 10px; margin: 10px; border: none; border-radius: 5px;">
+                        Test Redirect Result
+                    </button>
                 </div>
 
         <!-- User Info Section -->
