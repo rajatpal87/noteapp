@@ -76,7 +76,7 @@
         }
 
 
-                // Try popup-based sign-in method (more reliable than redirect)
+                // Use redirect-based sign-in method with proper error handling
                 window.signInWithGoogle = async () => {
                     console.log('🎯 signInWithGoogle function called!');
                     
@@ -89,66 +89,28 @@
                             }
                         }
                         
-                        console.log('🔑 Starting Google Sign-In with popup...');
-                        showMessage('Opening Google sign-in...', 'info');
+                        console.log('🔑 Starting Google Sign-In with redirect...');
+                        showMessage('Redirecting to Google sign-in...', 'info');
                         
                         // Store sign-in attempt in localStorage
                         localStorage.setItem('debug_signin_attempt', JSON.stringify({
                             timestamp: new Date().toISOString(),
-                            method: 'popup',
+                            method: 'redirect',
                             authDomain: auth.config.authDomain,
                             projectId: auth.config.projectId,
-                            providerId: googleProvider.providerId
+                            providerId: googleProvider.providerId,
+                            currentUrl: window.location.href
                         }));
                         
-                        // Import signInWithPopup
-                        const { signInWithPopup } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js');
-                        console.log('🔄 Calling signInWithPopup...');
+                        // Import signInWithRedirect
+                        const { signInWithRedirect } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js');
+                        console.log('🔄 Calling signInWithRedirect...');
                         console.log('🔄 Auth object:', auth);
                         console.log('🔄 Provider object:', googleProvider);
                         
-                        console.log('🔄 About to call signInWithPopup...');
-                        const result = await signInWithPopup(auth, googleProvider);
-                        console.log('✅ Popup sign-in completed!');
-                        console.log('🔍 Result type:', typeof result);
-                        console.log('🔍 Result:', result);
-                        console.log('🔍 Result.user:', result.user);
-                        console.log('🔍 Result.credential:', result.credential);
-                        
-                        // Store successful sign-in in localStorage for debugging
-                        localStorage.setItem('debug_popup_success', JSON.stringify({
-                            timestamp: new Date().toISOString(),
-                            hasUser: !!result.user,
-                            userEmail: result.user ? result.user.email : null,
-                            resultType: typeof result
-                        }));
-                        
-                        if (result && result.user) {
-                            console.log('👤 User details:', {
-                                uid: result.user.uid,
-                                email: result.user.email,
-                                name: result.user.displayName,
-                                emailVerified: result.user.emailVerified
-                            });
-                            
-                            // Store user data immediately
-                            const idToken = await result.user.getIdToken();
-                            console.log('🎫 Got ID token from popup result');
-                            localStorage.setItem('firebaseToken', idToken);
-                            localStorage.setItem('user', JSON.stringify({
-                                uid: result.user.uid,
-                                email: result.user.email,
-                                name: result.user.displayName,
-                                picture: result.user.photoURL
-                            }));
-                            
-                            showMessage('Successfully signed in!', 'success');
-                            showAuthenticatedUI(result.user);
-                            loadNotes();
-                        } else {
-                            console.error('❌ No user in popup result');
-                            throw new Error('No user returned from popup sign-in');
-                        }
+                        await signInWithRedirect(auth, googleProvider);
+                        console.log('🔄 Redirect initiated - page should redirect now');
+                        return; // Exit after redirect
                 
                     } catch (error) {
                         console.error('❌ Google sign-in error:', error);
@@ -160,7 +122,7 @@
                         });
                         
                         // Store error in localStorage for debugging
-                        localStorage.setItem('debug_popup_error', JSON.stringify({
+                        localStorage.setItem('debug_redirect_error', JSON.stringify({
                             timestamp: new Date().toISOString(),
                             code: error.code,
                             message: error.message,
@@ -168,11 +130,7 @@
                         }));
                         
                         // Handle specific error cases
-                        if (error.code === 'auth/popup-closed-by-user') {
-                            showMessage('Sign-in cancelled. Please try again.', 'info');
-                        } else if (error.code === 'auth/popup-blocked') {
-                            showMessage('Popup blocked by browser. Please allow popups and try again.', 'error');
-                        } else if (error.code === 'auth/api-key-not-valid') {
+                        if (error.code === 'auth/api-key-not-valid') {
                             showMessage('Authentication configuration error. Please contact support.', 'error');
                         } else if (error.code === 'auth/network-request-failed') {
                             showMessage('Network error. Please check your connection and try again.', 'error');
@@ -463,7 +421,7 @@ Redirect Result: ${debugInfo.redirectResult || 'Not found'}
                 console.log('🔍 URL search params:', window.location.search);
                 console.log('🔍 All URL params:', Object.fromEntries(urlParams.entries()));
                 
-                        // Simplified approach: Just set up auth listener and check for existing credentials
+                        // Check for redirect result first, then set up auth listener
                         console.log('🔍 Setting up authentication...');
                         
                         // Store debug info in localStorage to survive redirects
@@ -479,7 +437,38 @@ Redirect Result: ${debugInfo.redirectResult || 'Not found'}
                         console.log('🔍 Auth object exists:', !!auth);
                         console.log('🔍 Has existing token:', !!localStorage.getItem('firebaseToken'));
                         
-                        // Always set up auth listener - it will handle authentication state changes
+                        // Check if this is a redirect from Google Sign-In
+                        if (auth && !localStorage.getItem('firebaseToken')) {
+                            console.log('🔍 Checking for redirect result...');
+                            try {
+                                const { getRedirectResult } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js');
+                                const redirectResult = await getRedirectResult(auth);
+                                console.log('🔍 Redirect result:', redirectResult);
+                                
+                                if (redirectResult && redirectResult.user) {
+                                    console.log('✅ Redirect sign-in successful!');
+                                    const user = redirectResult.user;
+                                    const idToken = await user.getIdToken();
+                                    
+                                    localStorage.setItem('firebaseToken', idToken);
+                                    localStorage.setItem('user', JSON.stringify({
+                                        uid: user.uid,
+                                        email: user.email,
+                                        name: user.displayName,
+                                        picture: user.photoURL
+                                    }));
+                                    
+                                    showAuthenticatedUI(user);
+                                    loadNotes();
+                                    showMessage('Successfully signed in!', 'success');
+                                    return; // Exit early if redirect was successful
+                                }
+                            } catch (redirectError) {
+                                console.log('❌ Redirect result error:', redirectError);
+                            }
+                        }
+                        
+                        // Set up auth listener
                         console.log('🔔 Setting up auth listener...');
                         setupAuthStateListener();
                         
@@ -957,7 +946,7 @@ Redirect Result: ${debugInfo.redirectResult || 'Not found'}
                                 Sign in with Google
                             </button>
                     <p style="font-size: 0.9rem; color: #666; text-align: center; margin-top: 15px;">
-                        A popup window will open for Google sign-in
+                        You will be redirected to Google to sign in, then returned to this page
                     </p>
                     <div id="debug-info" style="background: #f0f0f0; padding: 10px; margin: 10px; border-radius: 5px; font-size: 0.8rem; text-align: left;">
                         <h4>Debug Info (survives redirects):</h4>
