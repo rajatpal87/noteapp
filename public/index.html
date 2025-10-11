@@ -67,8 +67,10 @@
 
         // Smart sign-in method that tries popup first, then redirect if popup fails
         window.signInWithGoogle = async () => {
+            console.log('🎯 signInWithGoogle function called!');
             try {
                 if (!auth || !googleProvider) {
+                    console.log('🔄 Firebase not initialized, initializing now...');
                     const initialized = await initializeFirebase();
                     if (!initialized) {
                         throw new Error('Firebase not initialized');
@@ -76,10 +78,14 @@
                 }
                 
                 console.log('🔑 Attempting Google Sign-In with popup...');
+                console.log('🔍 Auth object:', auth);
+                console.log('🔍 Google provider:', googleProvider);
                 
                 // Try popup first
                 try {
+                    console.log('🚀 Calling signInWithPopup...');
                     const result = await signInWithPopup(auth, googleProvider);
+                    console.log('✅ signInWithPopup returned result:', result);
                     const user = result.user;
                     
                     console.log('🔑 Popup sign-in successful, user details:', {
