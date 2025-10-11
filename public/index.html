@@ -680,28 +680,6 @@ Redirect Result: ${debugInfo.redirectResult || 'Not found'}
                     font-size: 1rem;
                 }
 
-                .stats {
-                    background: rgba(255, 255, 255, 0.95);
-                    border-radius: 10px;
-                    padding: 15px;
-                    box-shadow: 0 4px 16px 0 rgba(31, 38, 135, 0.37);
-                    backdrop-filter: blur(10px);
-                    border: 1px solid rgba(255, 255, 255, 0.18);
-                    text-align: center;
-                    color: #333;
-                }
-
-                .stats h3 {
-                    margin-bottom: 8px;
-                    font-weight: 500;
-                    font-size: 1.1rem;
-                }
-
-                .stats-number {
-                    font-size: 1.5rem;
-                    font-weight: bold;
-                    color: #667eea;
-                }
 
                 .loading {
                     text-align: center;
@@ -865,16 +843,16 @@ Redirect Result: ${debugInfo.redirectResult || 'Not found'}
             box-shadow: 0 4px 12px rgba(66, 133, 244, 0.4);
         }
 
-        .user-info {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            margin-bottom: 20px;
-            padding: 15px;
-            background: rgba(255, 255, 255, 0.9);
-            border-radius: 10px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-        }
+                .user-info {
+                    display: flex;
+                    align-items: center;
+                    gap: 15px;
+                    margin-bottom: 15px;
+                    padding: 12px;
+                    background: rgba(255, 255, 255, 0.9);
+                    border-radius: 10px;
+                    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+                }
 
         .user-avatar {
             width: 40px;
@@ -893,10 +871,40 @@ Redirect Result: ${debugInfo.redirectResult || 'Not found'}
             margin-bottom: 2px;
         }
 
-        .user-email {
-            font-size: 0.9rem;
-            color: #666;
-        }
+                .user-email {
+                    font-size: 0.9rem;
+                    color: #666;
+                }
+
+                .user-stats {
+                    display: flex;
+                    align-items: center;
+                    margin-left: auto;
+                    margin-right: 15px;
+                }
+
+                .stats-item {
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    padding: 8px 12px;
+                    background: rgba(102, 126, 234, 0.1);
+                    border-radius: 8px;
+                    border: 1px solid rgba(102, 126, 234, 0.2);
+                }
+
+                .stats-item .stats-number {
+                    font-size: 1.2rem;
+                    font-weight: bold;
+                    color: #667eea;
+                    line-height: 1;
+                }
+
+                .stats-item .stats-label {
+                    font-size: 0.7rem;
+                    color: #666;
+                    margin-top: 2px;
+                }
 
         .signout-btn {
             background: #e74c3c;
@@ -953,17 +961,23 @@ Redirect Result: ${debugInfo.redirectResult || 'Not found'}
                     </button>
                 </div>
 
-        <!-- User Info Section -->
-        <div id="user-section" class="hidden">
-            <div class="user-info">
-                <img id="user-avatar" class="user-avatar" src="" alt="User Avatar">
-                <div class="user-details">
-                    <div id="user-name" class="user-name"></div>
-                    <div id="user-email" class="user-email"></div>
+                <!-- User Info Section with Statistics -->
+                <div id="user-section" class="hidden">
+                    <div class="user-info">
+                        <img id="user-avatar" class="user-avatar" src="" alt="User Avatar">
+                        <div class="user-details">
+                            <div id="user-name" class="user-name"></div>
+                            <div id="user-email" class="user-email"></div>
+                        </div>
+                        <div class="user-stats">
+                            <div class="stats-item">
+                                <span class="stats-number" id="total-notes">0</span>
+                                <span class="stats-label">Notes</span>
+                            </div>
+                        </div>
+                        <button class="signout-btn" onclick="signOutUser()">Sign Out</button>
+                    </div>
                 </div>
-                <button class="signout-btn" onclick="signOutUser()">Sign Out</button>
-            </div>
-        </div>
 
                 <div class="main-content hidden">
                     <div class="notes-list">
@@ -992,11 +1006,6 @@ Redirect Result: ${debugInfo.redirectResult || 'Not found'}
                     </div>
                 </div>
 
-                <div class="stats hidden">
-                    <h3>📊 Statistics</h3>
-                    <div class="stats-number" id="total-notes">0</div>
-                    <p>Total Notes</p>
-                </div>
     </div>
 
     <script>
@@ -1009,13 +1018,11 @@ Redirect Result: ${debugInfo.redirectResult || 'Not found'}
                     const authSection = document.getElementById('auth-section');
                     const userSection = document.getElementById('user-section');
                     const mainContent = document.querySelector('.main-content');
-                    const stats = document.querySelector('.stats');
                     
                     console.log('🔍 Before UI changes:', {
                         authHidden: authSection ? authSection.classList.contains('hidden') : 'N/A',
                         userHidden: userSection ? userSection.classList.contains('hidden') : 'N/A',
-                        mainHidden: mainContent ? mainContent.classList.contains('hidden') : 'N/A',
-                        statsHidden: stats ? stats.classList.contains('hidden') : 'N/A'
+                        mainHidden: mainContent ? mainContent.classList.contains('hidden') : 'N/A'
                     });
                     
                     // Force hide auth section
@@ -1039,18 +1046,10 @@ Redirect Result: ${debugInfo.redirectResult || 'Not found'}
                         mainContent.style.visibility = 'visible';
                     }
                     
-                    // Force show stats
-                    if (stats) {
-                        stats.classList.remove('hidden');
-                        stats.style.display = 'block';
-                        stats.style.visibility = 'visible';
-                    }
-                    
                     console.log('🔍 After UI changes:', {
                         authHidden: authSection ? authSection.classList.contains('hidden') : 'N/A',
                         userHidden: userSection ? userSection.classList.contains('hidden') : 'N/A',
-                        mainHidden: mainContent ? mainContent.classList.contains('hidden') : 'N/A',
-                        statsHidden: stats ? stats.classList.contains('hidden') : 'N/A'
+                        mainHidden: mainContent ? mainContent.classList.contains('hidden') : 'N/A'
                     });
 
                     // Update user info
@@ -1067,8 +1066,7 @@ Redirect Result: ${debugInfo.redirectResult || 'Not found'}
                         console.log('🔍 Final visibility check:', {
                             authDisplay: authSection ? getComputedStyle(authSection).display : 'N/A',
                             userDisplay: userSection ? getComputedStyle(userSection).display : 'N/A',
-                            mainDisplay: mainContent ? getComputedStyle(mainContent).display : 'N/A',
-                            statsDisplay: stats ? getComputedStyle(stats).display : 'N/A'
+                            mainDisplay: mainContent ? getComputedStyle(mainContent).display : 'N/A'
                         });
                     }, 100);
                 }
@@ -1078,13 +1076,11 @@ Redirect Result: ${debugInfo.redirectResult || 'Not found'}
             const authSection = document.getElementById('auth-section');
             const userSection = document.getElementById('user-section');
             const mainContent = document.querySelector('.main-content');
-            const stats = document.querySelector('.stats');
             
             console.log('🔍 Before UI changes:', {
                 authHidden: authSection ? authSection.classList.contains('hidden') : 'N/A',
                 userHidden: userSection ? userSection.classList.contains('hidden') : 'N/A',
-                mainHidden: mainContent ? mainContent.classList.contains('hidden') : 'N/A',
-                statsHidden: stats ? stats.classList.contains('hidden') : 'N/A'
+                mainHidden: mainContent ? mainContent.classList.contains('hidden') : 'N/A'
             });
             
             // Force show auth section
@@ -1108,18 +1104,10 @@ Redirect Result: ${debugInfo.redirectResult || 'Not found'}
                 mainContent.style.visibility = 'hidden';
             }
             
-            // Force hide stats
-            if (stats) {
-                stats.classList.add('hidden');
-                stats.style.display = 'none';
-                stats.style.visibility = 'hidden';
-            }
-            
             console.log('🔍 After UI changes:', {
                 authHidden: authSection ? authSection.classList.contains('hidden') : 'N/A',
                 userHidden: userSection ? userSection.classList.contains('hidden') : 'N/A',
-                mainHidden: mainContent ? mainContent.classList.contains('hidden') : 'N/A',
-                statsHidden: stats ? stats.classList.contains('hidden') : 'N/A'
+                mainHidden: mainContent ? mainContent.classList.contains('hidden') : 'N/A'
             });
 
             // Clear notes
