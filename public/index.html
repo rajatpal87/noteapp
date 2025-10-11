@@ -220,10 +220,34 @@
                 // Test function accessibility
                 console.log('🧪 Testing function accessibility:', typeof window.signInWithGoogle);
                 
+                // Add event listener for the sign-in button
+                document.addEventListener('DOMContentLoaded', () => {
+                    console.log('🔘 Setting up button event listener...');
+                    const signInButton = document.getElementById('google-signin-button');
+                    if (signInButton) {
+                        console.log('✅ Button found, adding event listener');
+                        signInButton.addEventListener('click', (e) => {
+                            console.log('🔘 Button clicked via event listener!');
+                            e.preventDefault();
+                            signInWithGoogle();
+                        });
+                    } else {
+                        console.log('❌ Button not found!');
+                    }
+                });
+
                 // Check authentication status on page load
                 window.addEventListener('load', async () => {
                     console.log('🔄 Page loaded, checking authentication...');
                     console.log('🧪 signInWithGoogle function available:', typeof window.signInWithGoogle);
+                    
+                    // Check if auth section is visible
+                    const authSection = document.getElementById('auth-section');
+                    console.log('🔍 Auth section visibility:', {
+                        exists: !!authSection,
+                        hidden: authSection ? authSection.classList.contains('hidden') : 'N/A',
+                        display: authSection ? getComputedStyle(authSection).display : 'N/A'
+                    });
             
             // Initialize Firebase first
             const initialized = await initializeFirebase();
@@ -737,7 +761,7 @@
                 <div id="auth-section" class="auth-container hidden">
                     <h2>🔐 Sign In Required</h2>
                     <p>Please sign in with your Google account to access your personal notes</p>
-                            <button class="google-signin-btn" onclick="console.log('🔘 Button clicked!'); signInWithGoogle();">
+                            <button id="google-signin-button" class="google-signin-btn">
                                 <svg width="20" height="20" viewBox="0 0 24 24">
                                     <path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
                                     <path fill="currentColor" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
