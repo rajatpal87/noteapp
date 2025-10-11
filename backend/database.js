@@ -1,7 +1,6 @@
 const { createClient } = require('@supabase/supabase-js');
-require('dotenv').config();
 
-// Supabase configuration
+// Supabase configuration from Render environment variables
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_ANON_KEY;
 
