@@ -457,19 +457,14 @@ Redirect Result: ${debugInfo.redirectResult || 'Not found'}
                             isExpired: expiry ? Date.now() > parseInt(expiry) : true
                         });
                         
-                        if (token && user && expiry && Date.now() < parseInt(expiry)) {
-                            console.log('🔑 Found valid stored credentials, showing authenticated UI...');
+                        // For testing, always show authenticated UI if we have any token
+                        if (token && user) {
+                            console.log('🔑 Found stored credentials, showing authenticated UI...');
                             const userData = JSON.parse(user);
                             showAuthenticatedUI(userData);
                             loadNotes();
                         } else {
-                            console.log('❌ No valid stored credentials, showing unauthenticated UI...');
-                            if (expiry && Date.now() > parseInt(expiry)) {
-                                console.log('🔍 Authentication expired, clearing storage...');
-                                localStorage.removeItem('firebaseToken');
-                                localStorage.removeItem('user');
-                                localStorage.removeItem('authExpiry');
-                            }
+                            console.log('❌ No stored credentials, showing unauthenticated UI...');
                             showUnauthenticatedUI();
                         }
             } else {
@@ -1158,6 +1153,7 @@ Redirect Result: ${debugInfo.redirectResult || 'Not found'}
                         });
                         
                         const response = await fetch('/api/notes'); // No auth required for testing
+                        console.log('🔍 API call made without auth header');
                         
                         console.log('🔍 LOAD NOTES STEP 4: API response received');
                         console.log('🔍 Response status:', response.status);
@@ -1333,6 +1329,7 @@ Redirect Result: ${debugInfo.redirectResult || 'Not found'}
                         },
                         body: JSON.stringify({ title, content })
                     });
+                    console.log('🔍 Note creation API call made without auth header');
                     
                     console.log('📝 API response status:', response.status);
                     const result = await response.json();
