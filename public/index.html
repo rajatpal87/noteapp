@@ -829,38 +829,38 @@
             </div>
         </div>
 
-        <div class="main-content">
-            <div class="notes-list">
-                <h2>Your Notes</h2>
-                <div id="notes-container">
-                    <div class="loading">Loading notes...</div>
+                <div class="main-content hidden">
+                    <div class="notes-list">
+                        <h2>Your Notes</h2>
+                        <div id="notes-container">
+                            <div class="loading">Loading notes...</div>
+                        </div>
+                    </div>
+
+                    <div class="note-editor">
+                        <h2 id="editor-title">Create New Note</h2>
+                        <form id="note-form">
+                            <div class="form-group">
+                                <label for="note-title">Title</label>
+                                <input type="text" id="note-title" name="title" required placeholder="Enter note title">
+                            </div>
+                            <div class="form-group">
+                                <label for="note-content">Content</label>
+                                <textarea id="note-content" name="content" required placeholder="Write your note content here..."></textarea>
+                            </div>
+                            <div class="form-actions">
+                                <button type="button" class="btn btn-secondary btn-large" id="cancel-btn" onclick="cancelEdit()">Cancel</button>
+                                <button type="submit" class="btn btn-primary btn-large" id="save-btn">Save Note</button>
+                            </div>
+                        </form>
+                    </div>
                 </div>
-            </div>
 
-            <div class="note-editor">
-                <h2 id="editor-title">Create New Note</h2>
-                <form id="note-form">
-                    <div class="form-group">
-                        <label for="note-title">Title</label>
-                        <input type="text" id="note-title" name="title" required placeholder="Enter note title">
-                    </div>
-                    <div class="form-group">
-                        <label for="note-content">Content</label>
-                        <textarea id="note-content" name="content" required placeholder="Write your note content here..."></textarea>
-                    </div>
-                    <div class="form-actions">
-                        <button type="button" class="btn btn-secondary btn-large" id="cancel-btn" onclick="cancelEdit()">Cancel</button>
-                        <button type="submit" class="btn btn-primary btn-large" id="save-btn">Save Note</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-
-        <div class="stats">
-            <h3>📊 Statistics</h3>
-            <div class="stats-number" id="total-notes">0</div>
-            <p>Total Notes</p>
-        </div>
+                <div class="stats hidden">
+                    <h3>📊 Statistics</h3>
+                    <div class="stats-number" id="total-notes">0</div>
+                    <p>Total Notes</p>
+                </div>
     </div>
 
     <script>
