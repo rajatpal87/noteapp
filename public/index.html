@@ -962,12 +962,12 @@ Redirect Result: ${debugInfo.redirectResult || 'Not found'}
                     <div id="debug-info" style="background: #f0f0f0; padding: 10px; margin: 10px; border-radius: 5px; font-size: 0.8rem; text-align: left;">
                         <h4>Debug Info (survives redirects):</h4>
                         <div id="debug-content">Loading debug info...</div>
-                        <button onclick="showDebugInfo()" style="background: blue; color: white; padding: 5px; margin: 5px; border: none; border-radius: 3px;">Refresh Debug Info</button>
+                        <button onclick="alert('Button clicked!'); console.log('🔄 Refreshing debug info...'); if(typeof showDebugInfo === 'function') { showDebugInfo(); } else { console.error('showDebugInfo function not found'); }" style="background: blue; color: white; padding: 5px; margin: 5px; border: none; border-radius: 3px; cursor: pointer;">Refresh Debug Info</button>
                     </div>
-                    <button onclick="console.log('🧪 Testing redirect result manually...'); testRedirectResult();" style="background: orange; color: white; padding: 10px; margin: 10px; border: none; border-radius: 5px;">
+                    <button onclick="alert('Redirect test clicked!'); console.log('🧪 Testing redirect result manually...'); if(typeof testRedirectResult === 'function') { testRedirectResult(); } else { console.error('testRedirectResult function not found'); }" style="background: orange; color: white; padding: 10px; margin: 10px; border: none; border-radius: 5px; cursor: pointer;">
                         Test Redirect Result
                     </button>
-                    <button onclick="console.log('🧪 Testing auth state manually...'); testAuthState();" style="background: green; color: white; padding: 10px; margin: 10px; border: none; border-radius: 5px;">
+                    <button onclick="alert('Auth state test clicked!'); console.log('🧪 Testing auth state manually...'); if(typeof testAuthState === 'function') { testAuthState(); } else { console.error('testAuthState function not found'); }" style="background: green; color: white; padding: 10px; margin: 10px; border: none; border-radius: 5px; cursor: pointer;">
                         Test Auth State
                     </button>
                 </div>
