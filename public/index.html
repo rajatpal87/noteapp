@@ -31,7 +31,7 @@
                 if (result.success && result.firebaseConfig) {
                     firebaseConfig = {
                         apiKey: result.firebaseConfig.apiKey,
-                        authDomain: result.firebaseConfig.authDomain,
+                        authDomain: "note-app-d2cb3.firebaseapp.com", // Use Firebase hosting domain for redirect auth
                         projectId: result.firebaseConfig.projectId,
                         storageBucket: "rajat-s-project-ff711.firebasestorage.app",
                         messagingSenderId: "979852414023",
@@ -100,10 +100,6 @@
                         }), 'info');
                         
                         showMessage('Redirecting to Google for authentication...', 'info');
-                        
-                        // Store redirect info before redirecting
-                        localStorage.setItem('auth_redirect_started', Date.now().toString());
-                        localStorage.setItem('auth_redirect_url', window.location.href);
                         
                         // Use redirect-based authentication for better reliability
                         const { signInWithRedirect } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js');
