@@ -43,6 +43,13 @@ try {
   }
 } catch (error) {
   console.error('❌ Firebase Admin SDK initialization failed:', error.message);
+  console.error('❌ Full error details:', error);
+  console.error('❌ Private key format check:', {
+    hasPrivateKey: !!process.env.FIREBASE_PRIVATE_KEY,
+    keyLength: process.env.FIREBASE_PRIVATE_KEY ? process.env.FIREBASE_PRIVATE_KEY.length : 0,
+    startsWithBegin: process.env.FIREBASE_PRIVATE_KEY ? process.env.FIREBASE_PRIVATE_KEY.includes('-----BEGIN') : false,
+    endsWithEnd: process.env.FIREBASE_PRIVATE_KEY ? process.env.FIREBASE_PRIVATE_KEY.includes('-----END') : false
+  });
 }
 
 // Middleware to verify Firebase ID token
