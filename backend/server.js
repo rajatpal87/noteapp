@@ -281,10 +281,11 @@ app.use((err, req, res, next) => {
 
 // Start server
 const server = app.listen(PORT, '0.0.0.0', () => {
-  console.log(`📝 Note App running on http://localhost:${PORT}`);
+  console.log(`🚀 Note App running on http://localhost:${PORT}`);
   console.log(`📊 Health check: http://localhost:${PORT}/api/health`);
   console.log(`📋 API endpoints: http://localhost:${PORT}/api/notes`);
   console.log(`🌐 Also accessible via: http://127.0.0.1:${PORT}`);
+  console.log(`✅ BACKEND CHANGES DEPLOYED - AUTHENTICATION REMOVED FOR TESTING`);
 });
 
 // Handle server errors
