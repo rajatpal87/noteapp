@@ -6,9 +6,9 @@
     <title>Simple Note App</title>
     <!-- Firebase SDK -->
             <script type="module">
-                // Firebase configuration - Will be loaded from backend
-                import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
-                import { getAuth, GoogleAuthProvider, signInWithPopup, signOut } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+                        // Firebase configuration - Will be loaded from backend
+                        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+                        import { getAuth, GoogleAuthProvider, signOut } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
 
                 // Firebase config will be loaded from backend
                 let firebaseConfig = null;
@@ -65,11 +65,9 @@
         }
 
 
-                // Smart sign-in method that tries popup first, then redirect if popup fails
+                // Simple redirect-based sign-in method
                 window.signInWithGoogle = async () => {
                     console.log('🎯 signInWithGoogle function called!');
-                    console.log('🔍 Current auth state:', auth ? 'Auth exists' : 'No auth');
-                    console.log('🔍 Current provider state:', googleProvider ? 'Provider exists' : 'No provider');
                     
                     try {
                         if (!auth || !googleProvider) {
@@ -80,79 +78,29 @@
                             }
                         }
                         
-                        console.log('🔑 Attempting Google Sign-In with popup...');
-                        console.log('🔍 Auth object after init:', auth);
-                        console.log('🔍 Google provider after init:', googleProvider);
+                        console.log('🔑 Redirecting to Google Sign-In...');
+                        showMessage('Redirecting to Google sign-in...', 'info');
                         
-                        // Try popup first
-                        try {
-                            console.log('🚀 Calling signInWithPopup...');
-                            const result = await signInWithPopup(auth, googleProvider);
-                            console.log('✅ signInWithPopup returned result:', result);
-                            const user = result.user;
-                    
-                    console.log('🔑 Popup sign-in successful, user details:', {
-                        uid: user.uid,
-                        email: user.email,
-                        name: user.displayName,
-                        emailVerified: user.emailVerified
-                    });
-                    
-                    const idToken = await user.getIdToken();
-                    console.log('🎫 ID Token obtained:', idToken.substring(0, 20) + '...');
-                    
-                    localStorage.setItem('firebaseToken', idToken);
-                    localStorage.setItem('user', JSON.stringify({
-                        uid: user.uid,
-                        email: user.email,
-                        name: user.displayName,
-                        picture: user.photoURL
-                    }));
-
-                    console.log('💾 User data stored in localStorage');
-                    showAuthenticatedUI(user);
-                    loadNotes();
-                    showMessage('Successfully signed in!', 'success');
-                    return; // Exit successfully
-                    
-                        } catch (popupError) {
-                            console.log('❌ Popup sign-in failed:', popupError.code, popupError.message);
-                            console.log('🔍 Full popup error:', popupError);
-                            
-                            // Only try redirect for specific popup errors
-                            if (popupError.code === 'auth/popup-blocked' || 
-                                popupError.code === 'auth/popup-closed-by-user' ||
-                                popupError.code === 'auth/cancelled-popup-request') {
-                                
-                                console.log('🔄 Trying redirect method as fallback...');
-                                showMessage('Popup blocked or closed. Redirecting to Google sign-in...', 'info');
-                                
-                                // Import signInWithRedirect
-                                const { signInWithRedirect } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js');
-                                console.log('🔄 About to call signInWithRedirect...');
-                                await signInWithRedirect(auth, googleProvider);
-                                console.log('🔄 signInWithRedirect called, should redirect now');
-                                return; // Exit after redirect
-                            } else {
-                                // For other errors, don't try redirect
-                                console.log('❌ Not trying redirect for error:', popupError.code);
-                                throw popupError;
-                            }
+                        // Import signInWithRedirect
+                        const { signInWithRedirect } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js');
+                        console.log('🔄 Calling signInWithRedirect...');
+                        await signInWithRedirect(auth, googleProvider);
+                        console.log('🔄 Redirect initiated');
+                        return; // Exit after redirect
+                
+                    } catch (error) {
+                        console.error('❌ Google sign-in error:', error);
+                        
+                        // Handle specific error cases
+                        if (error.code === 'auth/api-key-not-valid') {
+                            showMessage('Authentication configuration error. Please contact support.', 'error');
+                        } else if (error.code === 'auth/network-request-failed') {
+                            showMessage('Network error. Please check your connection and try again.', 'error');
+                        } else {
+                            showMessage('Sign-in failed: ' + error.message, 'error');
                         }
-                
-            } catch (error) {
-                console.error('❌ Google sign-in error:', error);
-                
-                // Handle specific error cases
-                if (error.code === 'auth/api-key-not-valid') {
-                    showMessage('Authentication configuration error. Please contact support.', 'error');
-                } else if (error.code === 'auth/network-request-failed') {
-                    showMessage('Network error. Please check your connection and try again.', 'error');
-                } else {
-                    showMessage('Sign-in failed: ' + error.message, 'error');
-                }
-            }
-        };
+                    }
+                };
 
         window.signOutUser = async () => {
             try {
@@ -256,6 +204,7 @@
                         // Add multiple event listeners to test
                         signInButton.addEventListener('click', (e) => {
                             console.log('🔘 Button clicked via event listener!');
+                            console.log('🔘 Button click timestamp:', new Date().toISOString());
                             e.preventDefault();
                             signInWithGoogle();
                         });
@@ -798,17 +747,17 @@
                 <div id="auth-section" class="auth-container">
                     <h2>🔐 Sign In Required</h2>
                     <p>Please sign in with your Google account to access your personal notes</p>
-                            <button id="google-signin-button" class="google-signin-btn" style="border: 3px solid red !important; background: yellow !important;" onclick="console.log('🔘 DIRECT ONCLICK WORKING!'); signInWithGoogle();">
+                            <button id="google-signin-button" class="google-signin-btn">
                                 <svg width="20" height="20" viewBox="0 0 24 24">
                                     <path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
                                     <path fill="currentColor" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
                                     <path fill="currentColor" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
                                     <path fill="currentColor" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
                                 </svg>
-                                CLICK ME TO SIGN IN
+                                Sign in with Google
                             </button>
                     <p style="font-size: 0.9rem; color: #666; text-align: center; margin-top: 15px;">
-                        Automatically handles popup and redirect methods
+                        You will be redirected to Google to sign in, then returned to this page
                     </p>
                 </div>
 
