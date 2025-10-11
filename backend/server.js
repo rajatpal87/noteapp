@@ -102,6 +102,10 @@ app.get('/api/auth/status', (req, res) => {
     firebaseConfigured: isFirebaseConfigured()
   });
   
+  console.log('🔍 AUTH DOMAIN DEBUG - Current value:', config.authDomain);
+  console.log('🔍 AUTH DOMAIN DEBUG - Should be: noteapp-3k13.onrender.com');
+  console.log('🔍 AUTH DOMAIN DEBUG - Match check:', config.authDomain === 'noteapp-3k13.onrender.com' ? '✅ MATCH' : '❌ MISMATCH');
+  
   res.json({
     success: true,
     firebaseConfigured: isFirebaseConfigured(),

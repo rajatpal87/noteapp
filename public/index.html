@@ -31,7 +31,7 @@
                 if (result.success && result.firebaseConfig) {
                     firebaseConfig = {
                         apiKey: result.firebaseConfig.apiKey,
-                        authDomain: "noteapp-3k13.onrender.com", // Use actual Render domain instead of Firebase domain
+                        authDomain: result.firebaseConfig.authDomain,
                         projectId: result.firebaseConfig.projectId,
                         storageBucket: "rajat-s-project-ff711.firebasestorage.app",
                         messagingSenderId: "979852414023",
