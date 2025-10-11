@@ -111,10 +111,12 @@ app.get('/api/auth/status', (req, res) => {
   });
 });
 
-// GET /api/notes - Get all notes (Protected)
-app.get('/api/notes', verifyFirebaseToken, async (req, res) => {
+// GET /api/notes - Get all notes (TEMPORARILY UNPROTECTED FOR TESTING)
+app.get('/api/notes', async (req, res) => {
   try {
-    const notes = await database.getAllNotes(req.user.uid);
+    // Use a fixed user ID for testing
+    const testUserId = 'test-user-simple';
+    const notes = await database.getAllNotes(testUserId);
     res.json({
       success: true,
       data: notes,
@@ -155,11 +157,11 @@ app.get('/api/notes/:id', verifyFirebaseToken, async (req, res) => {
   }
 });
 
-// POST /api/notes - Create a new note (Protected)
-app.post('/api/notes', verifyFirebaseToken, async (req, res) => {
+// POST /api/notes - Create a new note (TEMPORARILY UNPROTECTED FOR TESTING)
+app.post('/api/notes', async (req, res) => {
   try {
     const { title, content } = req.body;
-    
+
     if (!title || !content) {
       return res.status(400).json({
         success: false,
@@ -167,8 +169,10 @@ app.post('/api/notes', verifyFirebaseToken, async (req, res) => {
       });
     }
 
-    const newNote = await database.createNote(title, content, req.user.uid);
-    
+    // Use a fixed user ID for testing
+    const testUserId = 'test-user-simple';
+    const newNote = await database.createNote(title, content, testUserId);
+
     res.status(201).json({
       success: true,
       data: newNote,

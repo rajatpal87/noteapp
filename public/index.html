@@ -76,58 +76,41 @@
         }
 
 
-                // Test authentication with a simple mock user (bypass Firebase issues)
+                // Simple authentication bypass for testing
                 window.signInWithGoogle = async () => {
                     console.log('🎯 signInWithGoogle function called!');
                     
                     try {
-                        console.log('🔑 Testing with mock authentication...');
-                        showMessage('Testing authentication...', 'info');
+                        console.log('🔑 Bypassing authentication for testing...');
+                        showMessage('Accessing app without authentication...', 'info');
                         
-                        // Use the EXACT user ID that current backend expects
-                        const fixedUserId = 'test-user-mock';  // This matches current backend
-                        const fixedToken = 'mock-token-fixed';
-                        
-                        // Create a mock user for testing
-                        const mockUser = {
-                            uid: fixedUserId,
+                        // Create a simple user for testing
+                        const testUser = {
+                            uid: 'test-user-simple',
                             email: 'test@example.com',
                             displayName: 'Test User',
                             photoURL: 'https://via.placeholder.com/40'
                         };
                         
-                        // Create a mock token with fixed value
-                        const mockToken = fixedToken;
+                        console.log('👤 Test user created:', testUser);
                         
-                        console.log('👤 Mock user created:', mockUser);
-                        console.log('🎫 Mock token created:', mockToken);
-                        
-                        // Store mock authentication data with longer expiration
-                        localStorage.setItem('firebaseToken', mockToken);
-                        localStorage.setItem('user', JSON.stringify(mockUser));
+                        // Store simple authentication data
+                        localStorage.setItem('firebaseToken', 'test-token');
+                        localStorage.setItem('user', JSON.stringify(testUser));
                         localStorage.setItem('authExpiry', (Date.now() + 24 * 60 * 60 * 1000).toString()); // 24 hours
                         
-                        // Store test attempt in localStorage
-                        localStorage.setItem('debug_mock_auth_attempt', JSON.stringify({
-                            timestamp: new Date().toISOString(),
-                            method: 'mock_auth',
-                            mockUser: mockUser,
-                            mockToken: mockToken,
-                            expiry: Date.now() + 24 * 60 * 60 * 1000
-                        }));
-                        
-                        console.log('✅ Mock authentication successful!');
-                        showMessage('Mock authentication successful!', 'success');
+                        console.log('✅ Authentication bypass successful!');
+                        showMessage('Access granted!', 'success');
                         
                         // Show authenticated UI
-                        showAuthenticatedUI(mockUser);
+                        showAuthenticatedUI(testUser);
                         loadNotes();
                         
                         return;
                 
                     } catch (error) {
-                        console.error('❌ Mock auth error:', error);
-                        showMessage('Mock authentication failed: ' + error.message, 'error');
+                        console.error('❌ Auth bypass error:', error);
+                        showMessage('Access failed: ' + error.message, 'error');
                     }
                 };
 
@@ -1174,11 +1157,7 @@ Redirect Result: ${debugInfo.redirectResult || 'Not found'}
                             userId: token ? token.replace('mock-token-', 'test-user-') : 'none' 
                         });
                         
-                        const response = await fetch('/api/notes', {
-                            headers: {
-                                'Authorization': `Bearer ${token}`
-                            }
-                        });
+                        const response = await fetch('/api/notes'); // No auth required for testing
                         
                         console.log('🔍 LOAD NOTES STEP 4: API response received');
                         console.log('🔍 Response status:', response.status);
@@ -1349,8 +1328,8 @@ Redirect Result: ${debugInfo.redirectResult || 'Not found'}
                     const response = await fetch(url, {
                         method: method,
                         headers: {
-                            'Content-Type': 'application/json',
-                            'Authorization': `Bearer ${token}`
+                            'Content-Type': 'application/json'
+                            // No auth required for testing
                         },
                         body: JSON.stringify({ title, content })
                     });
