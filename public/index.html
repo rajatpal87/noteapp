@@ -80,7 +80,16 @@
                 const result = await signInWithPopup(auth, googleProvider);
                 const user = result.user;
                 
+                console.log('🔑 Sign-in successful, user details:', {
+                    uid: user.uid,
+                    email: user.email,
+                    name: user.displayName,
+                    emailVerified: user.emailVerified
+                });
+                
                 const idToken = await user.getIdToken();
+                console.log('🎫 ID Token obtained:', idToken.substring(0, 20) + '...');
+                
                 localStorage.setItem('firebaseToken', idToken);
                 localStorage.setItem('user', JSON.stringify({
                     uid: user.uid,
@@ -89,6 +98,7 @@
                     picture: user.photoURL
                 }));
 
+                console.log('💾 User data stored in localStorage');
                 showAuthenticatedUI(user);
                 loadNotes();
                 showMessage('Successfully signed in!', 'success');
@@ -163,12 +173,29 @@
                         console.log('👤 User details:', {
                             uid: user.uid,
                             email: user.email,
-                            name: user.displayName
+                            name: user.displayName,
+                            emailVerified: user.emailVerified
                         });
+                        
+                        // Store user data in localStorage
+                        const idToken = user.getIdToken().then(token => {
+                            console.log('🎫 Getting fresh ID token...');
+                            localStorage.setItem('firebaseToken', token);
+                            localStorage.setItem('user', JSON.stringify({
+                                uid: user.uid,
+                                email: user.email,
+                                name: user.displayName,
+                                picture: user.photoURL
+                            }));
+                            console.log('💾 User data stored in localStorage');
+                        });
+                        
                         showAuthenticatedUI(user);
                         loadNotes();
                     } else {
-                        console.log('❌ No user, showing unauthenticated UI');
+                        console.log('❌ No user, clearing localStorage and showing unauthenticated UI');
+                        localStorage.removeItem('firebaseToken');
+                        localStorage.removeItem('user');
                         showUnauthenticatedUI();
                     }
                 });
@@ -186,6 +213,11 @@
             if (initialized) {
                 console.log('✅ Firebase initialized, setting up auth listener...');
                 setupAuthStateListener();
+                
+                // Check if this is a redirect from Google Sign-In
+                const urlParams = new URLSearchParams(window.location.search);
+                const isRedirect = urlParams.get('redirect') === 'true';
+                console.log('🔄 Is redirect from Google:', isRedirect);
                 
                 const token = localStorage.getItem('firebaseToken');
                 const user = localStorage.getItem('user');
