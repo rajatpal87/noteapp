@@ -152,35 +152,58 @@
         // Listen for auth state changes (will be set up after Firebase initialization)
         function setupAuthStateListener() {
             if (auth) {
+                console.log('🔔 Setting up Firebase auth state listener...');
                 auth.onAuthStateChanged((user) => {
+                    console.log('🔄 Auth state changed:', user ? 'User signed in' : 'User signed out');
                     if (user) {
+                        console.log('👤 User details:', {
+                            uid: user.uid,
+                            email: user.email,
+                            name: user.displayName
+                        });
                         showAuthenticatedUI(user);
                         loadNotes();
                     } else {
+                        console.log('❌ No user, showing unauthenticated UI');
                         showUnauthenticatedUI();
                     }
                 });
+            } else {
+                console.error('❌ Cannot setup auth listener - auth object not available');
             }
         }
 
         // Check authentication status on page load
         window.addEventListener('load', async () => {
+            console.log('🔄 Page loaded, checking authentication...');
+            
             // Initialize Firebase first
             const initialized = await initializeFirebase();
             if (initialized) {
+                console.log('✅ Firebase initialized, setting up auth listener...');
                 setupAuthStateListener();
                 
                 const token = localStorage.getItem('firebaseToken');
                 const user = localStorage.getItem('user');
                 
+                console.log('🔍 Local storage check:', {
+                    hasToken: !!token,
+                    hasUser: !!user,
+                    tokenPreview: token ? token.substring(0, 20) + '...' : 'none',
+                    userData: user ? JSON.parse(user) : 'none'
+                });
+                
                 if (token && user) {
+                    console.log('🔑 Found stored credentials, showing authenticated UI...');
                     const userData = JSON.parse(user);
                     showAuthenticatedUI(userData);
                     loadNotes();
                 } else {
+                    console.log('❌ No stored credentials, showing unauthenticated UI...');
                     showUnauthenticatedUI();
                 }
             } else {
+                console.error('❌ Firebase initialization failed');
                 showMessage('Failed to initialize Firebase. Please refresh the page.', 'error');
                 showUnauthenticatedUI();
             }
@@ -728,43 +751,59 @@
             // Authentication check is handled in the Firebase script
         });
 
-        // Load all notes
-        async function loadNotes() {
-            try {
-                const token = localStorage.getItem('firebaseToken');
-                if (!token) {
-                    showUnauthenticatedUI();
-                    return;
-                }
+                // Load all notes
+                async function loadNotes() {
+                    try {
+                        const token = localStorage.getItem('firebaseToken');
+                        console.log('📝 Loading notes...', { hasToken: !!token });
+                        
+                        if (!token) {
+                            console.log('❌ No token found, showing unauthenticated UI');
+                            showUnauthenticatedUI();
+                            return;
+                        }
 
-                const response = await fetch('/api/notes', {
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    }
-                });
-                const result = await response.json();
-                
-                if (result.success) {
-                    notes = result.data;
-                    renderNotes();
-                    updateStats();
-                } else {
-                    if (response.status === 401) {
-                        showMessage('Authentication required. Please sign in again.', 'error');
-                        showUnauthenticatedUI();
-                    } else {
-                        showMessage('Error loading notes: ' + result.error, 'error');
+                        console.log('🌐 Making API request to /api/notes...');
+                        const response = await fetch('/api/notes', {
+                            headers: {
+                                'Authorization': `Bearer ${token}`
+                            }
+                        });
+                        
+                        console.log('📡 API response:', { status: response.status, statusText: response.statusText });
+                        const result = await response.json();
+                        console.log('📊 API result:', result);
+
+                        if (result.success) {
+                            console.log('✅ Notes loaded successfully:', result.data.length, 'notes');
+                            notes = result.data;
+                            renderNotes();
+                            updateStats();
+                        } else {
+                            console.error('❌ API error:', result);
+                            if (response.status === 401) {
+                                console.log('🔒 401 Unauthorized - clearing auth and showing sign-in');
+                                localStorage.removeItem('firebaseToken');
+                                localStorage.removeItem('user');
+                                showMessage('Authentication required. Please sign in again.', 'error');
+                                showUnauthenticatedUI();
+                            } else {
+                                showMessage('Error loading notes: ' + result.error, 'error');
+                            }
+                        }
+                    } catch (error) {
+                        console.error('❌ Error in loadNotes:', error);
+                        if (error.message.includes('401') || error.message.includes('Unauthorized')) {
+                            console.log('🔒 Unauthorized error - clearing auth');
+                            localStorage.removeItem('firebaseToken');
+                            localStorage.removeItem('user');
+                            showMessage('Authentication required. Please sign in again.', 'error');
+                            showUnauthenticatedUI();
+                        } else {
+                            showMessage('Failed to load notes: ' + error.message, 'error');
+                        }
                     }
                 }
-            } catch (error) {
-                if (error.message.includes('401') || error.message.includes('Unauthorized')) {
-                    showMessage('Authentication required. Please sign in again.', 'error');
-                    showUnauthenticatedUI();
-                } else {
-                    showMessage('Failed to load notes: ' + error.message, 'error');
-                }
-            }
-        }
 
         // Render notes list
         function renderNotes() {
