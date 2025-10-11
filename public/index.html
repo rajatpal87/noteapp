@@ -991,38 +991,75 @@ Redirect Result: ${debugInfo.redirectResult || 'Not found'}
         let notes = [];
         let editingNoteId = null;
 
-        // Authentication UI Helper Functions
-        function showAuthenticatedUI(user) {
-            console.log('🔐 showAuthenticatedUI called with user:', user);
-            const authSection = document.getElementById('auth-section');
-            const userSection = document.getElementById('user-section');
-            const mainContent = document.querySelector('.main-content');
-            const stats = document.querySelector('.stats');
-            
-            console.log('🔍 Before UI changes:', {
-                authHidden: authSection ? authSection.classList.contains('hidden') : 'N/A',
-                userHidden: userSection ? userSection.classList.contains('hidden') : 'N/A',
-                mainHidden: mainContent ? mainContent.classList.contains('hidden') : 'N/A',
-                statsHidden: stats ? stats.classList.contains('hidden') : 'N/A'
-            });
-            
-            authSection.classList.add('hidden');
-            userSection.classList.remove('hidden');
-            mainContent.classList.remove('hidden');
-            stats.classList.remove('hidden');
-            
-            console.log('🔍 After UI changes:', {
-                authHidden: authSection.classList.contains('hidden'),
-                userHidden: userSection.classList.contains('hidden'),
-                mainHidden: mainContent.classList.contains('hidden'),
-                statsHidden: stats.classList.contains('hidden')
-            });
+                // Authentication UI Helper Functions
+                function showAuthenticatedUI(user) {
+                    console.log('🔐 showAuthenticatedUI called with user:', user);
+                    const authSection = document.getElementById('auth-section');
+                    const userSection = document.getElementById('user-section');
+                    const mainContent = document.querySelector('.main-content');
+                    const stats = document.querySelector('.stats');
+                    
+                    console.log('🔍 Before UI changes:', {
+                        authHidden: authSection ? authSection.classList.contains('hidden') : 'N/A',
+                        userHidden: userSection ? userSection.classList.contains('hidden') : 'N/A',
+                        mainHidden: mainContent ? mainContent.classList.contains('hidden') : 'N/A',
+                        statsHidden: stats ? stats.classList.contains('hidden') : 'N/A'
+                    });
+                    
+                    // Force hide auth section
+                    if (authSection) {
+                        authSection.classList.add('hidden');
+                        authSection.style.display = 'none';
+                        authSection.style.visibility = 'hidden';
+                    }
+                    
+                    // Force show user section
+                    if (userSection) {
+                        userSection.classList.remove('hidden');
+                        userSection.style.display = 'block';
+                        userSection.style.visibility = 'visible';
+                    }
+                    
+                    // Force show main content
+                    if (mainContent) {
+                        mainContent.classList.remove('hidden');
+                        mainContent.style.display = 'grid';
+                        mainContent.style.visibility = 'visible';
+                    }
+                    
+                    // Force show stats
+                    if (stats) {
+                        stats.classList.remove('hidden');
+                        stats.style.display = 'block';
+                        stats.style.visibility = 'visible';
+                    }
+                    
+                    console.log('🔍 After UI changes:', {
+                        authHidden: authSection ? authSection.classList.contains('hidden') : 'N/A',
+                        userHidden: userSection ? userSection.classList.contains('hidden') : 'N/A',
+                        mainHidden: mainContent ? mainContent.classList.contains('hidden') : 'N/A',
+                        statsHidden: stats ? stats.classList.contains('hidden') : 'N/A'
+                    });
 
-            // Update user info
-            document.getElementById('user-name').textContent = user.name || user.displayName || 'User';
-            document.getElementById('user-email').textContent = user.email;
-            document.getElementById('user-avatar').src = user.picture || user.photoURL || 'https://via.placeholder.com/40';
-        }
+                    // Update user info
+                    const userNameEl = document.getElementById('user-name');
+                    const userEmailEl = document.getElementById('user-email');
+                    const userAvatarEl = document.getElementById('user-avatar');
+                    
+                    if (userNameEl) userNameEl.textContent = user.name || user.displayName || 'User';
+                    if (userEmailEl) userEmailEl.textContent = user.email;
+                    if (userAvatarEl) userAvatarEl.src = user.picture || user.photoURL || 'https://via.placeholder.com/40';
+                    
+                    // Final visibility check
+                    setTimeout(() => {
+                        console.log('🔍 Final visibility check:', {
+                            authDisplay: authSection ? getComputedStyle(authSection).display : 'N/A',
+                            userDisplay: userSection ? getComputedStyle(userSection).display : 'N/A',
+                            mainDisplay: mainContent ? getComputedStyle(mainContent).display : 'N/A',
+                            statsDisplay: stats ? getComputedStyle(stats).display : 'N/A'
+                        });
+                    }, 100);
+                }
 
         function showUnauthenticatedUI() {
             console.log('🔓 showUnauthenticatedUI called');
@@ -1038,16 +1075,39 @@ Redirect Result: ${debugInfo.redirectResult || 'Not found'}
                 statsHidden: stats ? stats.classList.contains('hidden') : 'N/A'
             });
             
-            authSection.classList.remove('hidden');
-            userSection.classList.add('hidden');
-            mainContent.classList.add('hidden');
-            stats.classList.add('hidden');
+            // Force show auth section
+            if (authSection) {
+                authSection.classList.remove('hidden');
+                authSection.style.display = 'flex';
+                authSection.style.visibility = 'visible';
+            }
+            
+            // Force hide user section
+            if (userSection) {
+                userSection.classList.add('hidden');
+                userSection.style.display = 'none';
+                userSection.style.visibility = 'hidden';
+            }
+            
+            // Force hide main content
+            if (mainContent) {
+                mainContent.classList.add('hidden');
+                mainContent.style.display = 'none';
+                mainContent.style.visibility = 'hidden';
+            }
+            
+            // Force hide stats
+            if (stats) {
+                stats.classList.add('hidden');
+                stats.style.display = 'none';
+                stats.style.visibility = 'hidden';
+            }
             
             console.log('🔍 After UI changes:', {
-                authHidden: authSection.classList.contains('hidden'),
-                userHidden: userSection.classList.contains('hidden'),
-                mainHidden: mainContent.classList.contains('hidden'),
-                statsHidden: stats.classList.contains('hidden')
+                authHidden: authSection ? authSection.classList.contains('hidden') : 'N/A',
+                userHidden: userSection ? userSection.classList.contains('hidden') : 'N/A',
+                mainHidden: mainContent ? mainContent.classList.contains('hidden') : 'N/A',
+                statsHidden: stats ? stats.classList.contains('hidden') : 'N/A'
             });
 
             // Clear notes
