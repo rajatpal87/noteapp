@@ -191,10 +191,19 @@
                         showAuthenticatedUI(user);
                         loadNotes();
                     } else {
-                        console.log('❌ No user, clearing localStorage and showing unauthenticated UI');
-                        localStorage.removeItem('firebaseToken');
-                        localStorage.removeItem('user');
-                        showUnauthenticatedUI();
+                        console.log('❌ No user, checking if we should clear localStorage...');
+                        // Only clear localStorage if there's no valid token
+                        const existingToken = localStorage.getItem('firebaseToken');
+                        if (existingToken) {
+                            console.log('🔍 Found existing token, keeping localStorage intact');
+                            // Don't clear localStorage, just show unauthenticated UI
+                            showUnauthenticatedUI();
+                        } else {
+                            console.log('🧹 No existing token, clearing localStorage');
+                            localStorage.removeItem('firebaseToken');
+                            localStorage.removeItem('user');
+                            showUnauthenticatedUI();
+                        }
                     }
                 });
             } else {
@@ -209,15 +218,15 @@
             // Initialize Firebase first
             const initialized = await initializeFirebase();
             if (initialized) {
-                console.log('✅ Firebase initialized, setting up auth listener...');
-                setupAuthStateListener();
+                console.log('✅ Firebase initialized, checking for redirect result first...');
                 
                 // Check if this is a redirect from Google Sign-In
                 const urlParams = new URLSearchParams(window.location.search);
                 const isRedirect = urlParams.get('redirect') === 'true';
                 console.log('🔄 Is redirect from Google:', isRedirect);
                 
-                // Handle redirect result if needed
+                // Handle redirect result FIRST, before setting up auth listener
+                let redirectSuccess = false;
                 if (auth && !localStorage.getItem('firebaseToken')) {
                     try {
                         console.log('🔄 Checking for redirect result...');
@@ -240,7 +249,7 @@
                             showAuthenticatedUI(redirectResult.user);
                             loadNotes();
                             showMessage('Successfully signed in!', 'success');
-                            return; // Exit early since we're authenticated
+                            redirectSuccess = true;
                         } else {
                             console.log('ℹ️ No redirect result found');
                         }
@@ -249,24 +258,30 @@
                     }
                 }
                 
-                const token = localStorage.getItem('firebaseToken');
-                const user = localStorage.getItem('user');
-                
-                console.log('🔍 Local storage check:', {
-                    hasToken: !!token,
-                    hasUser: !!user,
-                    tokenPreview: token ? token.substring(0, 20) + '...' : 'none',
-                    userData: user ? JSON.parse(user) : 'none'
-                });
-                
-                if (token && user) {
-                    console.log('🔑 Found stored credentials, showing authenticated UI...');
-                    const userData = JSON.parse(user);
-                    showAuthenticatedUI(userData);
-                    loadNotes();
-                } else {
-                    console.log('❌ No stored credentials, showing unauthenticated UI...');
-                    showUnauthenticatedUI();
+                // Only set up auth listener if redirect didn't succeed
+                if (!redirectSuccess) {
+                    console.log('🔔 Setting up auth listener...');
+                    setupAuthStateListener();
+                    
+                    const token = localStorage.getItem('firebaseToken');
+                    const user = localStorage.getItem('user');
+                    
+                    console.log('🔍 Local storage check:', {
+                        hasToken: !!token,
+                        hasUser: !!user,
+                        tokenPreview: token ? token.substring(0, 20) + '...' : 'none',
+                        userData: user ? JSON.parse(user) : 'none'
+                    });
+                    
+                    if (token && user) {
+                        console.log('🔑 Found stored credentials, showing authenticated UI...');
+                        const userData = JSON.parse(user);
+                        showAuthenticatedUI(userData);
+                        loadNotes();
+                    } else {
+                        console.log('❌ No stored credentials, showing unauthenticated UI...');
+                        showUnauthenticatedUI();
+                    }
                 }
             } else {
                 console.error('❌ Firebase initialization failed');
