@@ -107,26 +107,65 @@
                         console.log('🔄 Auth object:', auth);
                         console.log('🔄 Provider object:', googleProvider);
                         
+                        console.log('🔄 About to call signInWithPopup...');
                         const result = await signInWithPopup(auth, googleProvider);
-                        console.log('✅ Popup sign-in successful!');
+                        console.log('✅ Popup sign-in completed!');
+                        console.log('🔍 Result type:', typeof result);
                         console.log('🔍 Result:', result);
-                        console.log('🔍 User:', result.user);
+                        console.log('🔍 Result.user:', result.user);
+                        console.log('🔍 Result.credential:', result.credential);
                         
-                        if (result.user) {
+                        // Store successful sign-in in localStorage for debugging
+                        localStorage.setItem('debug_popup_success', JSON.stringify({
+                            timestamp: new Date().toISOString(),
+                            hasUser: !!result.user,
+                            userEmail: result.user ? result.user.email : null,
+                            resultType: typeof result
+                        }));
+                        
+                        if (result && result.user) {
                             console.log('👤 User details:', {
                                 uid: result.user.uid,
                                 email: result.user.email,
-                                name: result.user.displayName
+                                name: result.user.displayName,
+                                emailVerified: result.user.emailVerified
                             });
                             
+                            // Store user data immediately
+                            const idToken = await result.user.getIdToken();
+                            console.log('🎫 Got ID token from popup result');
+                            localStorage.setItem('firebaseToken', idToken);
+                            localStorage.setItem('user', JSON.stringify({
+                                uid: result.user.uid,
+                                email: result.user.email,
+                                name: result.user.displayName,
+                                picture: result.user.photoURL
+                            }));
+                            
                             showMessage('Successfully signed in!', 'success');
-                            // The auth state listener will handle the rest
+                            showAuthenticatedUI(result.user);
+                            loadNotes();
                         } else {
+                            console.error('❌ No user in popup result');
                             throw new Error('No user returned from popup sign-in');
                         }
                 
                     } catch (error) {
                         console.error('❌ Google sign-in error:', error);
+                        console.error('❌ Error details:', {
+                            code: error.code,
+                            message: error.message,
+                            stack: error.stack,
+                            name: error.name
+                        });
+                        
+                        // Store error in localStorage for debugging
+                        localStorage.setItem('debug_popup_error', JSON.stringify({
+                            timestamp: new Date().toISOString(),
+                            code: error.code,
+                            message: error.message,
+                            name: error.name
+                        }));
                         
                         // Handle specific error cases
                         if (error.code === 'auth/popup-closed-by-user') {
@@ -137,8 +176,12 @@
                             showMessage('Authentication configuration error. Please contact support.', 'error');
                         } else if (error.code === 'auth/network-request-failed') {
                             showMessage('Network error. Please check your connection and try again.', 'error');
+                        } else if (error.code === 'auth/operation-not-allowed') {
+                            showMessage('Google sign-in is not enabled. Please contact support.', 'error');
+                        } else if (error.code === 'auth/unauthorized-domain') {
+                            showMessage('Domain not authorized for Google sign-in. Please contact support.', 'error');
                         } else {
-                            showMessage('Sign-in failed: ' + error.message, 'error');
+                            showMessage('Sign-in failed: ' + error.message + ' (Code: ' + error.code + ')', 'error');
                         }
                     }
                 };
@@ -226,6 +269,9 @@
                         oauthDetection: localStorage.getItem('debug_oauth_detection'),
                         redirectResult: localStorage.getItem('debug_redirect_result'),
                         redirectAttempt: localStorage.getItem('debug_redirect_attempt'),
+                        signinAttempt: localStorage.getItem('debug_signin_attempt'),
+                        popupSuccess: localStorage.getItem('debug_popup_success'),
+                        popupError: localStorage.getItem('debug_popup_error'),
                         authStateChange: localStorage.getItem('debug_auth_state_change'),
                         currentUrl: window.location.href,
                         currentTime: new Date().toISOString()
@@ -236,11 +282,17 @@
 Current URL: ${debugInfo.currentUrl}
 Current Time: ${debugInfo.currentTime}
 
+Sign-in Attempt: ${debugInfo.signinAttempt || 'Not found'}
+
+Popup Success: ${debugInfo.popupSuccess || 'Not found'}
+
+Popup Error: ${debugInfo.popupError || 'Not found'}
+
+Auth State Change: ${debugInfo.authStateChange || 'Not found'}
+
 Redirect Check: ${debugInfo.redirectCheck || 'Not found'}
 
 OAuth Detection: ${debugInfo.oauthDetection || 'Not found'}
-
-Redirect Attempt: ${debugInfo.redirectAttempt || 'Not found'}
 
 Redirect Result: ${debugInfo.redirectResult || 'Not found'}
                         </pre>
