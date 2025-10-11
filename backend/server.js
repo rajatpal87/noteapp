@@ -93,7 +93,7 @@ app.get('/api/auth/status', (req, res) => {
 // GET /api/notes - Get all notes (Protected)
 app.get('/api/notes', verifyFirebaseToken, async (req, res) => {
   try {
-    const notes = await database.getAllNotes();
+    const notes = await database.getAllNotes(req.user.uid);
     res.json({
       success: true,
       data: notes,
@@ -113,7 +113,7 @@ app.get('/api/notes', verifyFirebaseToken, async (req, res) => {
 // GET /api/notes/:id - Get a specific note (Protected)
 app.get('/api/notes/:id', verifyFirebaseToken, async (req, res) => {
   try {
-    const note = await database.getNoteById(req.params.id);
+    const note = await database.getNoteById(req.params.id, req.user.uid);
     res.json({
       success: true,
       data: note
@@ -146,7 +146,7 @@ app.post('/api/notes', verifyFirebaseToken, async (req, res) => {
       });
     }
 
-    const newNote = await database.createNote(title, content);
+    const newNote = await database.createNote(title, content, req.user.uid);
     
     res.status(201).json({
       success: true,
@@ -176,7 +176,7 @@ app.put('/api/notes/:id', verifyFirebaseToken, async (req, res) => {
       });
     }
 
-    const updatedNote = await database.updateNote(req.params.id, title, content);
+    const updatedNote = await database.updateNote(req.params.id, title, content, req.user.uid);
 
     res.json({
       success: true,
@@ -203,7 +203,7 @@ app.put('/api/notes/:id', verifyFirebaseToken, async (req, res) => {
 // DELETE /api/notes/:id - Delete a note (Protected)
 app.delete('/api/notes/:id', verifyFirebaseToken, async (req, res) => {
   try {
-    const deletedNote = await database.deleteNote(req.params.id);
+    const deletedNote = await database.deleteNote(req.params.id, req.user.uid);
     
     res.json({
       success: true,

@@ -62,8 +62,8 @@ class Database {
     }
   }
 
-  // Get all notes
-  async getAllNotes() {
+  // Get all notes for a specific user
+  async getAllNotes(userId) {
     if (!this.isConnected) {
       // Return fallback notes when database is not connected
       return fallbackNotes.sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at));
@@ -73,6 +73,7 @@ class Database {
       const { data, error } = await this.supabase
         .from('notes')
         .select('*')
+        .eq('user_id', userId)
         .order('updated_at', { ascending: false });
 
       if (error) {
@@ -88,8 +89,8 @@ class Database {
     }
   }
 
-  // Get a specific note by ID
-  async getNoteById(id) {
+  // Get a specific note by ID and user ID
+  async getNoteById(id, userId) {
     if (!this.isConnected) {
       // Search in fallback notes
       const note = fallbackNotes.find(n => n.id === id);
@@ -104,6 +105,7 @@ class Database {
         .from('notes')
         .select('*')
         .eq('id', id)
+        .eq('user_id', userId)
         .single();
 
       if (error) {
@@ -126,7 +128,7 @@ class Database {
   }
 
   // Create a new note
-  async createNote(title, content) {
+  async createNote(title, content, userId) {
     if (!this.isConnected) {
       // Create note in fallback storage
       const { v4: uuidv4 } = require('uuid');
@@ -134,6 +136,7 @@ class Database {
         id: uuidv4(),
         title: title.trim(),
         content: content.trim(),
+        user_id: userId,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       };
@@ -145,6 +148,7 @@ class Database {
       const noteData = {
         title: title.trim(),
         content: content.trim(),
+        user_id: userId,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       };
@@ -168,6 +172,7 @@ class Database {
         id: uuidv4(),
         title: title.trim(),
         content: content.trim(),
+        user_id: userId,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       };
@@ -177,7 +182,7 @@ class Database {
   }
 
   // Update an existing note
-  async updateNote(id, title, content) {
+  async updateNote(id, title, content, userId) {
     if (!this.isConnected) {
       // Update note in fallback storage
       const noteIndex = fallbackNotes.findIndex(n => n.id === id);
@@ -206,6 +211,7 @@ class Database {
         .from('notes')
         .update(updateData)
         .eq('id', id)
+        .eq('user_id', userId)
         .select()
         .single();
 
@@ -237,7 +243,7 @@ class Database {
   }
 
   // Delete a note
-  async deleteNote(id) {
+  async deleteNote(id, userId) {
     if (!this.isConnected) {
       // Delete note from fallback storage
       const noteIndex = fallbackNotes.findIndex(n => n.id === id);
@@ -254,6 +260,7 @@ class Database {
         .from('notes')
         .delete()
         .eq('id', id)
+        .eq('user_id', userId)
         .select()
         .single();
 
@@ -278,8 +285,8 @@ class Database {
     }
   }
 
-  // Get total count of notes
-  async getNotesCount() {
+  // Get total count of notes for a specific user
+  async getNotesCount(userId) {
     if (!this.isConnected) {
       // Return fallback notes count
       return fallbackNotes.length;
@@ -288,7 +295,8 @@ class Database {
     try {
       const { count, error } = await this.supabase
         .from('notes')
-        .select('*', { count: 'exact', head: true });
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', userId);
 
       if (error) {
         throw new Error(`Failed to get notes count: ${error.message}`);
