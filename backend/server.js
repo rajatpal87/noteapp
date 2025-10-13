@@ -1,3 +1,6 @@
+// Load environment variables from .env file
+require('dotenv').config();
+
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
@@ -83,12 +86,6 @@ app.get('/api/health', async (req, res) => {
 
 // Authentication status endpoint
 app.get('/api/auth/status', (req, res) => {
-  const config = {
-    projectId: process.env.FIREBASE_PROJECT_ID,
-    authDomain: process.env.FIREBASE_AUTH_DOMAIN,
-    apiKey: process.env.FIREBASE_API_KEY
-  };
-  
   const envStatus = {
     FIREBASE_PROJECT_ID: process.env.FIREBASE_PROJECT_ID ? '✅ Set' : '❌ Missing',
     FIREBASE_AUTH_DOMAIN: process.env.FIREBASE_AUTH_DOMAIN ? '✅ Set' : '❌ Missing',
@@ -96,23 +93,36 @@ app.get('/api/auth/status', (req, res) => {
     FIREBASE_PRIVATE_KEY: process.env.FIREBASE_PRIVATE_KEY ? '✅ Set' : '❌ Missing'
   };
   
-  console.log('🔍 /api/auth/status - Firebase Config Check:', {
-    projectId: config.projectId ? '✅ Set (' + config.projectId + ')' : '❌ Missing',
-    authDomain: config.authDomain ? '✅ Set (' + config.authDomain + ')' : '❌ Missing', 
-    apiKey: config.apiKey ? '✅ Set (' + config.apiKey.substring(0, 10) + '...)' : '❌ Missing',
-    firebaseConfigured: isFirebaseConfigured()
-  });
+  // Only provide Firebase config if all required environment variables are set
+  const hasAllRequiredEnvVars = process.env.FIREBASE_PROJECT_ID && 
+                               process.env.FIREBASE_AUTH_DOMAIN && 
+                               process.env.FIREBASE_API_KEY;
   
-  console.log('🔍 AUTH DOMAIN DEBUG - Current value:', config.authDomain);
-  console.log('🔍 AUTH DOMAIN DEBUG - Should be: noteapp-3k13.onrender.com');
-  console.log('🔍 AUTH DOMAIN DEBUG - Match check:', config.authDomain === 'noteapp-3k13.onrender.com' ? '✅ MATCH' : '❌ MISMATCH');
-  console.log('🔍 DEPLOYMENT CHECK - Backend is running after env var change');
+  let firebaseConfig = {};
+  if (hasAllRequiredEnvVars) {
+    firebaseConfig = {
+      projectId: process.env.FIREBASE_PROJECT_ID,
+      authDomain: process.env.FIREBASE_AUTH_DOMAIN,
+      apiKey: process.env.FIREBASE_API_KEY
+    };
+    console.log('✅ Firebase config provided from environment variables');
+  } else {
+    console.log('❌ Firebase environment variables not complete - config not provided');
+  }
+  
+  console.log('🔍 /api/auth/status - Firebase Config Check:', {
+    projectId: process.env.FIREBASE_PROJECT_ID ? '✅ Set (' + process.env.FIREBASE_PROJECT_ID + ')' : '❌ Missing',
+    authDomain: process.env.FIREBASE_AUTH_DOMAIN ? '✅ Set (' + process.env.FIREBASE_AUTH_DOMAIN + ')' : '❌ Missing', 
+    apiKey: process.env.FIREBASE_API_KEY ? '✅ Set (' + process.env.FIREBASE_API_KEY.substring(0, 10) + '...)' : '❌ Missing',
+    firebaseConfigured: isFirebaseConfigured(),
+    configProvided: hasAllRequiredEnvVars
+  });
   
   res.json({
     success: true,
     firebaseConfigured: isFirebaseConfigured(),
     authenticationRequired: true,
-    firebaseConfig: config,
+    firebaseConfig: firebaseConfig,
     environmentStatus: envStatus
   });
 });

@@ -28,16 +28,27 @@
                     console.log('🔍 Backend Environment Variables Status:', result.environmentStatus);
                 }
                 
-                if (result.success && result.firebaseConfig) {
+                if (result.success && result.firebaseConfig && Object.keys(result.firebaseConfig).length > 0) {
+                    // Use backend config from environment variables
                     firebaseConfig = {
                         apiKey: result.firebaseConfig.apiKey,
-                        authDomain: result.firebaseConfig.authDomain, // Use the domain from backend (Render domain)
+                        authDomain: result.firebaseConfig.authDomain,
                         projectId: result.firebaseConfig.projectId,
-                        storageBucket: "rajat-s-project-ff711.firebasestorage.app",
+                        storageBucket: result.firebaseConfig.projectId + ".firebasestorage.app",
                         messagingSenderId: "979852414023",
                         appId: "1:979852414023:web:2342933f538f5c36ccb562",
                         measurementId: "G-4FH5SBQWP0"
                     };
+                    console.log('✅ Using Firebase config from backend environment variables');
+                } else {
+                    console.log('❌ Firebase configuration not available from backend');
+                    console.log('❌ Environment variables not set on backend - authentication will not work');
+                    console.log('❌ Please ensure FIREBASE_PROJECT_ID, FIREBASE_AUTH_DOMAIN, and FIREBASE_API_KEY are set in Render environment variables');
+                    
+                    // Show user-friendly error message
+                    showMessage('Authentication service not configured. Please contact administrator.', 'error');
+                    throw new Error('Firebase configuration not available from backend environment variables');
+                }
                     
                     console.log('Firebase config being used:', {
                         apiKey: firebaseConfig.apiKey ? '✅ Set (' + firebaseConfig.apiKey.substring(0, 10) + '...)' : '❌ Missing',
@@ -67,7 +78,7 @@
                         customParameters: googleProvider.getCustomParameters()
                     });
                     
-                    console.log('✅ Firebase initialized with backend config');
+                    console.log('✅ Firebase initialized with config');
                     return true;
                 } else {
                     throw new Error('Failed to get Firebase config from backend');
@@ -113,9 +124,20 @@
                         localStorage.setItem('auth_redirect_url', window.location.href);
                         
                         persistentLog.add('About to call signInWithRedirect...', 'info');
-                        await signInWithRedirect(auth, googleProvider);
                         
-                        persistentLog.add('Redirect initiated successfully', 'success');
+                        // Add a timeout to detect if redirect fails
+                        const redirectTimeout = setTimeout(() => {
+                            persistentLog.add('Redirect timeout - user may have cancelled or error occurred', 'warning');
+                        }, 30000); // 30 second timeout
+                        
+                        try {
+                            await signInWithRedirect(auth, googleProvider);
+                            clearTimeout(redirectTimeout);
+                            persistentLog.add('Redirect initiated successfully', 'success');
+                        } catch (redirectError) {
+                            clearTimeout(redirectTimeout);
+                            throw redirectError;
+                        }
                         
                     } catch (error) {
                         persistentLog.add('Google authentication error: ' + error.message, 'error');
@@ -424,17 +446,27 @@
                             showMessage('Error getting authentication token: ' + error.message, 'error');
                         });
                     } else {
-                        persistentLog.add('No user, checking localStorage...', 'warning');
-                        // Only clear localStorage if there's no valid stored token
+                        persistentLog.add('No user in auth state, checking localStorage...', 'warning');
+                        // Check for existing valid credentials
                         const existingToken = localStorage.getItem('firebaseToken');
                         const existingUser = localStorage.getItem('user');
+                        const expiry = localStorage.getItem('authExpiry');
                         
-                        if (existingToken && existingUser) {
-                            persistentLog.add('Found existing credentials, keeping localStorage intact', 'info');
-                            // Don't clear localStorage immediately, just show unauthenticated UI
-                            showUnauthenticatedUI();
+                        if (existingToken && existingUser && expiry && Date.now() < parseInt(expiry)) {
+                            persistentLog.add('Found valid stored credentials, showing authenticated UI', 'info');
+                            try {
+                                const userData = JSON.parse(existingUser);
+                                showAuthenticatedUI(userData);
+                                loadNotes();
+                            } catch (parseError) {
+                                persistentLog.add('Error parsing stored user data: ' + parseError.message, 'error');
+                                localStorage.removeItem('firebaseToken');
+                                localStorage.removeItem('user');
+                                localStorage.removeItem('authExpiry');
+                                showUnauthenticatedUI();
+                            }
                         } else {
-                            persistentLog.add('No existing credentials, clearing localStorage', 'warning');
+                            persistentLog.add('No valid stored credentials, clearing localStorage', 'warning');
                             localStorage.removeItem('firebaseToken');
                             localStorage.removeItem('user');
                             localStorage.removeItem('authExpiry');
@@ -443,8 +475,8 @@
                     }
                 });
                 
-                // Check for redirect result with retry mechanism
-                checkRedirectResultWithRetry();
+                // Note: Redirect result checking is now handled in the main page load flow
+                // No need to call checkRedirectResultWithRetry() here as it's already handled above
             } else {
                 persistentLog.add('Cannot setup auth listener - auth object not available', 'error');
             }
@@ -498,11 +530,13 @@
                     // Show authenticated UI
                     showAuthenticatedUI(result.user);
                     loadNotes();
+                    return true; // Indicate success
                 } else {
                     persistentLog.add('No redirect result found', 'warning');
                     if (timeSinceRedirect && timeSinceRedirect < 60000) {
                         persistentLog.add('Recent redirect detected but no result - possible timing issue', 'warning');
                     }
+                    return false; // Indicate no result
                 }
             } catch (error) {
                 persistentLog.add('Error checking redirect result: ' + error.message, 'error');
@@ -511,6 +545,7 @@
                     code: error.code,
                     message: error.message
                 }), 'error');
+                return false; // Indicate error
             }
         }
 
@@ -522,13 +557,11 @@
             while (attempts < maxAttempts) {
                 try {
                     persistentLog.add(`Checking for redirect result (attempt ${attempts + 1}/${maxAttempts})...`, 'info');
-                    await checkRedirectResult();
+                    const success = await checkRedirectResult();
                     
-                    // Check if we found a redirect result
-                    const result = await getRedirectResult(auth);
-                    if (result && result.user) {
-                        persistentLog.add('Redirect result found and processed', 'success');
-                        return;
+                    if (success) {
+                        persistentLog.add('Redirect result found and processed successfully', 'success');
+                        return true; // Success - user is authenticated
                     }
                     
                     attempts++;
@@ -546,6 +579,7 @@
             }
             
             persistentLog.add('No redirect result found after all attempts', 'warning');
+            return false; // No redirect result found
         }
 
         // Helper function to get redirect result
@@ -631,29 +665,42 @@
                     currentUser: auth.currentUser ? auth.currentUser.email : 'null'
                 });
                 
+                // Always check for redirect result first - this is critical for Google auth
+                console.log('🔍 Checking for redirect result immediately after Firebase init...');
+                
+                // Check if we have redirect tracking or URL indicators
+                const urlParams = new URLSearchParams(window.location.search);
+                const hasRedirectTracking = localStorage.getItem('auth_redirect_started');
+                const hasAuthParams = window.location.href.includes('__/auth/handler') ||
+                                    window.location.href.includes('authType=signInViaRedirect') ||
+                                    window.location.href.includes('apiKey=');
+                
+                console.log('🔍 Redirect indicators:', {
+                    hasRedirectTracking: !!hasRedirectTracking,
+                    hasAuthParams: hasAuthParams,
+                    url: window.location.href,
+                    searchParams: window.location.search
+                });
+                
+                // Always try to get redirect result - Firebase handles this internally
                 try {
                     const { getRedirectResult } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js');
                     console.log('🔍 Calling getRedirectResult...');
-                    const immediateResult = await getRedirectResult(auth);
-                    console.log('🔍 IMMEDIATE redirect result:', immediateResult);
-                    console.log('🔍 Result details:', {
-                        hasResult: !!immediateResult,
-                        hasUser: immediateResult && !!immediateResult.user,
-                        operationType: immediateResult ? immediateResult.operationType : 'none',
-                        userEmail: immediateResult && immediateResult.user ? immediateResult.user.email : 'none'
-                    });
+                    const redirectResult = await getRedirectResult(auth);
                     
-                    if (immediateResult && immediateResult.user) {
-                        console.log('✅ IMMEDIATE redirect success!');
-                        const user = immediateResult.user;
-                        const idToken = await user.getIdToken();
+                    console.log('🔍 Redirect result:', redirectResult);
+                    
+                    if (redirectResult && redirectResult.user) {
+                        console.log('✅ Redirect authentication successful!', redirectResult.user.email);
                         
+                        // Store user data
+                        const idToken = await redirectResult.user.getIdToken();
                         localStorage.setItem('firebaseToken', idToken);
                         localStorage.setItem('user', JSON.stringify({
-                            uid: user.uid,
-                            email: user.email,
-                            name: user.displayName,
-                            picture: user.photoURL
+                            uid: redirectResult.user.uid,
+                            email: redirectResult.user.email,
+                            name: redirectResult.user.displayName,
+                            picture: redirectResult.user.photoURL
                         }));
                         localStorage.setItem('authExpiry', (Date.now() + 24 * 60 * 60 * 1000).toString());
                         
@@ -661,40 +708,16 @@
                         localStorage.removeItem('auth_redirect_started');
                         localStorage.removeItem('auth_redirect_url');
                         
-                        showAuthenticatedUI(user);
+                        // Show authenticated UI
+                        showAuthenticatedUI(redirectResult.user);
                         loadNotes();
                         showMessage('Successfully signed in!', 'success');
-                        return; // Exit early - redirect was successful
+                        return; // Exit early - authentication successful
                     } else {
-                        console.log('🔍 No immediate redirect result found');
-                        console.log('🔍 Checking if we just came from a redirect...');
-                        
-                        // Check URL for redirect indicators
-                        const url = window.location.href;
-                        const hasAuthParams = url.includes('__/auth/handler') || 
-                                            url.includes('authType=signInViaRedirect') ||
-                                            url.includes('apiKey=');
-                        
-                        console.log('🔍 URL redirect indicators:', {
-                            url: url,
-                            hasAuthHandler: url.includes('__/auth/handler'),
-                            hasAuthType: url.includes('authType=signInViaRedirect'),
-                            hasApiKey: url.includes('apiKey='),
-                            hasAuthParams: hasAuthParams
-                        });
-                        
-                        if (hasAuthParams) {
-                            console.log('⚠️ Detected redirect URL but no result - possible timing issue');
-                            console.log('🔄 Will retry redirect result check...');
-                        }
+                        console.log('🔍 No redirect result found');
                     }
-                } catch (immediateError) {
-                    console.log('❌ Immediate redirect check error:', immediateError);
-                    console.log('❌ Error details:', {
-                        name: immediateError.name,
-                        message: immediateError.message,
-                        code: immediateError.code
-                    });
+                } catch (redirectError) {
+                    console.log('🔍 Redirect check error:', redirectError);
                 }
                 
                 // Set up auth listener
@@ -713,12 +736,12 @@
                             searchParams: window.location.search
                         });
                         
-                        // Check for existing credentials with expiry
+                        // Check for existing credentials with expiry as fallback
                         const token = localStorage.getItem('firebaseToken');
                         const user = localStorage.getItem('user');
                         const expiry = localStorage.getItem('authExpiry');
                         
-                        console.log('🔍 Local storage check:', {
+                        console.log('🔍 Fallback local storage check:', {
                             hasToken: !!token,
                             hasUser: !!user,
                             hasExpiry: !!expiry,
@@ -728,14 +751,22 @@
                             isExpired: expiry ? Date.now() > parseInt(expiry) : true
                         });
                         
-                        // Check for valid stored credentials
+                        // Check for valid stored credentials as fallback
                         if (token && user && expiry && Date.now() < parseInt(expiry)) {
-                            console.log('🔑 Found valid stored credentials, showing authenticated UI...');
-                            const userData = JSON.parse(user);
-                            showAuthenticatedUI(userData);
-                            loadNotes();
+                            console.log('🔑 Found valid stored credentials in fallback check, showing authenticated UI...');
+                            try {
+                                const userData = JSON.parse(user);
+                                showAuthenticatedUI(userData);
+                                loadNotes();
+                            } catch (parseError) {
+                                console.log('❌ Error parsing stored user data:', parseError);
+                                localStorage.removeItem('firebaseToken');
+                                localStorage.removeItem('user');
+                                localStorage.removeItem('authExpiry');
+                                showUnauthenticatedUI();
+                            }
                         } else {
-                            console.log('❌ No valid stored credentials, showing unauthenticated UI...');
+                            console.log('❌ No valid stored credentials in fallback check, showing unauthenticated UI...');
                             if (expiry && Date.now() > parseInt(expiry)) {
                                 console.log('🔍 Authentication expired, clearing storage...');
                                 localStorage.removeItem('firebaseToken');
@@ -1370,6 +1401,13 @@
                 // Authentication UI Helper Functions
                 function showAuthenticatedUI(user) {
                     console.log('🔐 showAuthenticatedUI called with user:', user);
+                    console.log('🔐 User details:', {
+                        uid: user.uid,
+                        email: user.email,
+                        name: user.name || user.displayName,
+                        picture: user.picture || user.photoURL
+                    });
+                    
                     const authSection = document.getElementById('auth-section');
                     const userSection = document.getElementById('user-section');
                     const mainContent = document.querySelector('.main-content');
@@ -1407,14 +1445,34 @@
                         mainHidden: mainContent ? mainContent.classList.contains('hidden') : 'N/A'
                     });
 
-                    // Update user info
+                    // Update user info with proper fallbacks
                     const userNameEl = document.getElementById('user-name');
                     const userEmailEl = document.getElementById('user-email');
                     const userAvatarEl = document.getElementById('user-avatar');
                     
-                    if (userNameEl) userNameEl.textContent = user.name || user.displayName || 'User';
-                    if (userEmailEl) userEmailEl.textContent = user.email;
-                    if (userAvatarEl) userAvatarEl.src = user.picture || user.photoURL || 'https://via.placeholder.com/40';
+                    const displayName = user.name || user.displayName || user.email?.split('@')[0] || 'User';
+                    const userEmail = user.email || 'No email';
+                    const userPicture = user.picture || user.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&background=667eea&color=fff&size=40`;
+                    
+                    console.log('🔐 Setting user info:', {
+                        displayName: displayName,
+                        userEmail: userEmail,
+                        userPicture: userPicture
+                    });
+                    
+                    if (userNameEl) {
+                        userNameEl.textContent = displayName;
+                        console.log('✅ User name set:', userNameEl.textContent);
+                    }
+                    if (userEmailEl) {
+                        userEmailEl.textContent = userEmail;
+                        console.log('✅ User email set:', userEmailEl.textContent);
+                    }
+                    if (userAvatarEl) {
+                        userAvatarEl.src = userPicture;
+                        userAvatarEl.alt = `${displayName}'s avatar`;
+                        console.log('✅ User avatar set:', userAvatarEl.src);
+                    }
                     
                     // Final visibility check
                     setTimeout(() => {
@@ -1422,6 +1480,13 @@
                             authDisplay: authSection ? getComputedStyle(authSection).display : 'N/A',
                             userDisplay: userSection ? getComputedStyle(userSection).display : 'N/A',
                             mainDisplay: mainContent ? getComputedStyle(mainContent).display : 'N/A'
+                        });
+                        
+                        // Additional check to ensure user info is visible
+                        console.log('🔍 User info elements:', {
+                            userNameVisible: userNameEl ? userNameEl.textContent : 'N/A',
+                            userEmailVisible: userEmailEl ? userEmailEl.textContent : 'N/A',
+                            userAvatarVisible: userAvatarEl ? userAvatarEl.src : 'N/A'
                         });
                     }, 100);
                 }
