@@ -47,7 +47,9 @@
                     
                     // Show user-friendly error message
                     showMessage('Authentication service not configured. Please contact administrator.', 'error');
-                    throw new Error('Firebase configuration not available from backend environment variables');
+                    
+                    // Return false instead of throwing error to allow page to continue loading
+                    return false;
                 }
                     
                     console.log('Firebase config being used:', {
@@ -99,7 +101,9 @@
                             persistentLog.add('Firebase not initialized, initializing...', 'warning');
                             const initialized = await initializeFirebase();
                             if (!initialized) {
-                                throw new Error('Firebase not initialized');
+                                persistentLog.add('Firebase initialization failed - authentication not available', 'error');
+                                showMessage('Authentication service not configured. Please contact administrator.', 'error');
+                                return;
                             }
                         }
                         
@@ -155,7 +159,13 @@
                         if (!auth) {
                             const initialized = await initializeFirebase();
                             if (!initialized) {
-                                throw new Error('Firebase not initialized');
+                                console.log('Firebase not initialized - clearing local storage and showing unauthenticated UI');
+                                localStorage.removeItem('firebaseToken');
+                                localStorage.removeItem('user');
+                                localStorage.removeItem('authExpiry');
+                                showUnauthenticatedUI();
+                                showMessage('Authentication service not available.', 'error');
+                                return;
                             }
                         }
                         
@@ -777,8 +787,18 @@
                         }
             } else {
                 console.error('❌ Firebase initialization failed');
-                showMessage('Failed to initialize Firebase. Please refresh the page.', 'error');
+                console.log('⚠️ Firebase not available - button will show error when clicked');
+                showMessage('Authentication service not available. Please check your deployment configuration.', 'error');
                 showUnauthenticatedUI();
+                
+                // Ensure button is still clickable to show error message
+                const googleBtn = document.getElementById('google-signin-button');
+                if (googleBtn) {
+                    googleBtn.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        showMessage('Authentication service not configured. Please contact administrator.', 'error');
+                    });
+                }
             }
         });
     </script>
