@@ -8,6 +8,7 @@ try {
         console.log('🔍 Firebase environment variables check:', {
             FIREBASE_PROJECT_ID: process.env.FIREBASE_PROJECT_ID ? '✅ Set (' + process.env.FIREBASE_PROJECT_ID + ')' : '❌ Missing',
             FIREBASE_AUTH_DOMAIN: process.env.FIREBASE_AUTH_DOMAIN ? '✅ Set (' + process.env.FIREBASE_AUTH_DOMAIN + ')' : '❌ Missing',
+            FIREBASE_API_KEY: process.env.FIREBASE_API_KEY ? '✅ Set (' + process.env.FIREBASE_API_KEY.substring(0, 10) + '...)' : '❌ Missing',
             FIREBASE_CLIENT_EMAIL: process.env.FIREBASE_CLIENT_EMAIL ? '✅ Set (' + process.env.FIREBASE_CLIENT_EMAIL.substring(0, 20) + '...)' : '❌ Missing',
             FIREBASE_PRIVATE_KEY: process.env.FIREBASE_PRIVATE_KEY ? '✅ Set (' + process.env.FIREBASE_PRIVATE_KEY.substring(0, 20) + '...)' : '❌ Missing'
         });
@@ -15,6 +16,7 @@ try {
         // Check if Firebase credentials are available from Render environment variables
         if (process.env.FIREBASE_PROJECT_ID &&
             process.env.FIREBASE_AUTH_DOMAIN &&
+            process.env.FIREBASE_API_KEY &&
             process.env.FIREBASE_CLIENT_EMAIL &&
             process.env.FIREBASE_PRIVATE_KEY) {
     
@@ -39,7 +41,7 @@ try {
     console.log('✅ Firebase Admin SDK initialized successfully');
   } else {
             console.log('⚠️  Firebase credentials not found in environment variables. Authentication will be disabled.');
-            console.log('   Required: FIREBASE_PROJECT_ID, FIREBASE_AUTH_DOMAIN, FIREBASE_CLIENT_EMAIL, FIREBASE_PRIVATE_KEY');
+            console.log('   Required: FIREBASE_PROJECT_ID, FIREBASE_AUTH_DOMAIN, FIREBASE_API_KEY, FIREBASE_CLIENT_EMAIL, FIREBASE_PRIVATE_KEY');
   }
 } catch (error) {
   console.error('❌ Firebase Admin SDK initialization failed:', error.message);

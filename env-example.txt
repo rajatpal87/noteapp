@@ -1,10 +1,13 @@
-# Firebase Configuration
-# Get these values from Firebase Console > Project Settings > Service Accounts
+# Firebase Configuration for Render Environment Variables
+# Get these values from Firebase Console > Project Settings
 
-FIREBASE_PROJECT_ID=your-project-id
-FIREBASE_AUTH_DOMAIN=your-project-id.firebaseapp.com
-FIREBASE_API_KEY=your-api-key
-FIREBASE_CLIENT_EMAIL=firebase-adminsdk-xxxxx@your-project-id.iam.gserviceaccount.com
+# Required for Frontend Authentication
+FIREBASE_PROJECT_ID=note-app-d2cb3
+FIREBASE_AUTH_DOMAIN=note-app-d2cb3.firebaseapp.com
+FIREBASE_API_KEY=your-firebase-api-key
+
+# Required for Backend Authentication (Service Account)
+FIREBASE_CLIENT_EMAIL=firebase-adminsdk-xxxxx@note-app-d2cb3.iam.gserviceaccount.com
 FIREBASE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\nYour-Private-Key-Here\n-----END PRIVATE KEY-----"
 
 # Supabase Configuration (optional - for database)

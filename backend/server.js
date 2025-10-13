@@ -89,6 +89,7 @@ app.get('/api/auth/status', (req, res) => {
   const envStatus = {
     FIREBASE_PROJECT_ID: process.env.FIREBASE_PROJECT_ID ? '✅ Set' : '❌ Missing',
     FIREBASE_AUTH_DOMAIN: process.env.FIREBASE_AUTH_DOMAIN ? '✅ Set' : '❌ Missing',
+    FIREBASE_API_KEY: process.env.FIREBASE_API_KEY ? '✅ Set' : '❌ Missing',
     FIREBASE_CLIENT_EMAIL: process.env.FIREBASE_CLIENT_EMAIL ? '✅ Set' : '❌ Missing',
     FIREBASE_PRIVATE_KEY: process.env.FIREBASE_PRIVATE_KEY ? '✅ Set' : '❌ Missing'
   };

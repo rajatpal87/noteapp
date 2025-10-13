@@ -43,7 +43,7 @@
                 } else {
                     console.log('❌ Firebase configuration not available from backend');
                     console.log('❌ Environment variables not set on backend - authentication will not work');
-                    console.log('❌ Please ensure FIREBASE_PROJECT_ID, FIREBASE_AUTH_DOMAIN, and FIREBASE_API_KEY are set in Render environment variables');
+                    console.log('❌ Please ensure FIREBASE_PROJECT_ID, FIREBASE_AUTH_DOMAIN, FIREBASE_API_KEY, FIREBASE_CLIENT_EMAIL, and FIREBASE_PRIVATE_KEY are set in Render environment variables');
                     
                     // Show user-friendly error message
                     showMessage('Authentication service not configured. Please contact administrator.', 'error');
