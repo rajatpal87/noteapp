@@ -238,147 +238,101 @@
                 // Basic JavaScript test
                 console.log('🚀 JavaScript is starting to load...');
                 
-                // On-screen logging system for button clicks
+                // Simple on-screen logging system
                 function addOnScreenLog(message, type = 'info') {
-                    // Create log area if it doesn't exist
-                    let logArea = document.getElementById('on-screen-logs');
-                    if (!logArea) {
-                        logArea = document.createElement('div');
-                        logArea.id = 'on-screen-logs';
-                        logArea.className = 'on-screen-logs';
-                        logArea.innerHTML = `
-                            <h3>🔍 Button Click Logs</h3>
-                            <div class="log-container"></div>
-                        `;
-                        
-                        // Add it to the page
-                        const authSection = document.getElementById('auth-section');
-                        if (authSection) {
-                            authSection.appendChild(logArea);
-                        } else {
-                            document.body.appendChild(logArea);
-                        }
-                    }
-                    
-                    const logContainer = logArea.querySelector('.log-container');
-                    if (logContainer) {
-                        const timestamp = new Date().toLocaleTimeString();
-                        const logEntry = document.createElement('div');
-                        logEntry.className = `log-entry log-${type}`;
-                        logEntry.innerHTML = `<span class="log-time">[${timestamp}]</span> <span class="log-message">${message}</span>`;
-                        logContainer.appendChild(logEntry);
-                        
-                        // Keep only last 10 logs
-                        while (logContainer.children.length > 10) {
-                            logContainer.removeChild(logContainer.firstChild);
+                    try {
+                        // Create log area if it doesn't exist
+                        let logArea = document.getElementById('on-screen-logs');
+                        if (!logArea) {
+                            logArea = document.createElement('div');
+                            logArea.id = 'on-screen-logs';
+                            logArea.style.cssText = 'background: #f8f9fa; border: 2px solid #28a745; border-radius: 8px; padding: 15px; margin: 20px; max-width: 600px;';
+                            logArea.innerHTML = '<h3 style="margin: 0 0 10px 0; color: #28a745;">🔍 Button Click Logs</h3><div class="log-container" style="background: #fff; border: 1px solid #ddd; border-radius: 5px; padding: 10px; max-height: 200px; overflow-y: auto; font-family: monospace; font-size: 0.9rem;"></div>';
+                            
+                            // Add it to the page
+                            const authSection = document.getElementById('auth-section');
+                            if (authSection) {
+                                authSection.appendChild(logArea);
+                            } else {
+                                document.body.appendChild(logArea);
+                            }
                         }
                         
-                        // Scroll to bottom
-                        logContainer.scrollTop = logContainer.scrollHeight;
+                        const logContainer = logArea.querySelector('.log-container');
+                        if (logContainer) {
+                            const timestamp = new Date().toLocaleTimeString();
+                            const logEntry = document.createElement('div');
+                            logEntry.style.cssText = `margin: 5px 0; padding: 5px; border-radius: 3px; border-left: 4px solid ${
+                                type === 'success' ? '#28a745' : 
+                                type === 'info' ? '#17a2b8' : 
+                                type === 'warning' ? '#ffc107' : '#dc3545'
+                            }; background: ${
+                                type === 'success' ? '#d4edda' : 
+                                type === 'info' ? '#d1ecf1' : 
+                                type === 'warning' ? '#fff3cd' : '#f8d7da'
+                            };`;
+                            logEntry.innerHTML = `<span style="font-weight: bold; margin-right: 10px;">[${timestamp}]</span> <span>${message}</span>`;
+                            logContainer.appendChild(logEntry);
+                            
+                            // Keep only last 10 logs
+                            while (logContainer.children.length > 10) {
+                                logContainer.removeChild(logContainer.firstChild);
+                            }
+                            
+                            // Scroll to bottom
+                            logContainer.scrollTop = logContainer.scrollHeight;
+                        }
+                    } catch (error) {
+                        console.error('Error adding on-screen log:', error);
                     }
                 }
                 
-                // Function to ensure Google sign-in button is always clickable
+                // Simple, bulletproof button setup
                 function setupGoogleSignInButton() {
                     console.log('🔧 Setting up Google sign-in button...');
                     addOnScreenLog('🔧 Setting up Google sign-in button...', 'info');
                     
-                    // Try multiple times with different approaches
-                    const attempts = [
-                        () => document.getElementById('google-signin-button'),
-                        () => document.querySelector('#google-signin-button'),
-                        () => document.querySelector('.google-signin-btn'),
-                        () => document.querySelector('button[class*="google"]')
-                    ];
-                    
-                    let googleBtn = null;
-                    for (let i = 0; i < attempts.length; i++) {
-                        googleBtn = attempts[i]();
-                        if (googleBtn) {
-                            console.log(`✅ Google sign-in button found with method ${i + 1}`);
-                            break;
+                    try {
+                        // Find the button
+                        const button = document.getElementById('google-signin-button');
+                        if (!button) {
+                            addOnScreenLog('❌ Button not found!', 'error');
+                            console.error('❌ Google sign-in button not found');
+                            return;
                         }
-                    }
-                    
-                    if (googleBtn) {
-                        console.log('🔍 Button details:', {
-                            id: googleBtn.id,
-                            className: googleBtn.className,
-                            disabled: googleBtn.disabled,
-                            style: googleBtn.style.cssText,
-                            computedDisplay: getComputedStyle(googleBtn).display,
-                            computedVisibility: getComputedStyle(googleBtn).visibility,
-                            computedPointerEvents: getComputedStyle(googleBtn).pointerEvents
-                        });
                         
-                        // Remove any existing event listeners by cloning
-                        const parent = googleBtn.parentNode;
-                        const newBtn = googleBtn.cloneNode(true);
-                        parent.replaceChild(newBtn, googleBtn);
+                        addOnScreenLog('✅ Button found!', 'success');
                         
-                        // Ensure button is not disabled
-                        newBtn.disabled = false;
-                        newBtn.style.pointerEvents = 'auto';
-                        newBtn.style.cursor = 'pointer';
+                        // Remove any existing event listeners
+                        const newButton = button.cloneNode(true);
+                        button.parentNode.replaceChild(newButton, button);
                         
-                        // Add multiple event listeners to ensure it works
-                        const clickHandler = async (e) => {
-                            console.log('🔑 Google sign-in button clicked!');
-                            
-                            // Add on-screen log for button click
-                            addOnScreenLog('🔑 Google sign-in button clicked!', 'success');
-                            
+                        // Make sure button is clickable
+                        newButton.disabled = false;
+                        newButton.style.pointerEvents = 'auto';
+                        newButton.style.cursor = 'pointer';
+                        
+                        // Add simple click handler
+                        newButton.onclick = function(e) {
                             e.preventDefault();
-                            e.stopPropagation();
+                            console.log('🔑 Button clicked!');
+                            addOnScreenLog('🔑 Button clicked!', 'success');
                             
-                            try {
-                                // Check if Firebase is initialized
-                                if (auth && typeof window.signInWithGoogle === 'function') {
-                                    console.log('✅ Firebase available, calling signInWithGoogle');
-                                    addOnScreenLog('✅ Firebase available, calling signInWithGoogle', 'info');
-                                    await window.signInWithGoogle();
-                                } else {
-                                    console.log('❌ Firebase not available, showing error');
-                                    addOnScreenLog('❌ Firebase not available, showing error', 'warning');
-                                    showMessage('Authentication service not configured. Please contact administrator.', 'error');
-                                }
-                            } catch (error) {
-                                console.error('❌ Error in Google sign-in button handler:', error);
-                                addOnScreenLog('❌ Error in Google sign-in button handler: ' + error.message, 'error');
-                                showMessage('Authentication error: ' + error.message, 'error');
+                            // Check if Firebase is available
+                            if (typeof window.signInWithGoogle === 'function') {
+                                addOnScreenLog('✅ Firebase available, calling signInWithGoogle', 'info');
+                                window.signInWithGoogle();
+                            } else {
+                                addOnScreenLog('❌ Firebase not available', 'warning');
+                                alert('Authentication service not configured. Please contact administrator.');
                             }
                         };
                         
-                        // Add multiple event types
-                        newBtn.addEventListener('click', clickHandler);
-                        newBtn.addEventListener('mousedown', clickHandler);
-                        newBtn.addEventListener('touchstart', clickHandler);
+                        addOnScreenLog('✅ Button setup complete!', 'success');
                         
-                        // Also add onclick as fallback
-                        newBtn.onclick = clickHandler;
-                        
-                        console.log('✅ Google sign-in button event listeners set up');
-                        
-                        // Test if button is clickable
-                        setTimeout(() => {
-                            const testBtn = document.getElementById('google-signin-button');
-                            if (testBtn) {
-                                console.log('🧪 Button clickability test:', {
-                                    exists: !!testBtn,
-                                    disabled: testBtn.disabled,
-                                    pointerEvents: getComputedStyle(testBtn).pointerEvents,
-                                    cursor: getComputedStyle(testBtn).cursor
-                                });
-                            }
-                        }, 100);
-                        
-                    } else {
-                        console.error('❌ Google sign-in button not found with any method');
-                        // Try again after a short delay
-                        setTimeout(() => {
-                            console.log('🔄 Retrying button setup...');
-                            setupGoogleSignInButton();
-                        }, 500);
+                    } catch (error) {
+                        console.error('❌ Error setting up button:', error);
+                        addOnScreenLog('❌ Error setting up button: ' + error.message, 'error');
                     }
                 }
                 
@@ -479,20 +433,25 @@
                 // Show debug info on page load
                 window.addEventListener('load', () => {
                     console.log('🔄 Page load event fired');
+                    addOnScreenLog('🔄 Page load event fired', 'info');
                     
                     try {
-                        // Set up Google sign-in button multiple times with different timing
+                        // Set up Google sign-in button
                         setupGoogleSignInButton();
-                        setTimeout(() => setupGoogleSignInButton(), 100);
-                        setTimeout(() => setupGoogleSignInButton(), 500);
-                        setTimeout(() => setupGoogleSignInButton(), 1000);
+                        
+                        // Try again after a short delay
+                        setTimeout(() => {
+                            setupGoogleSignInButton();
+                        }, 500);
                         
                         setTimeout(() => {
                             try {
                                 showDebugInfo();
                                 console.log('✅ Debug info displayed');
+                                addOnScreenLog('✅ Debug info displayed', 'success');
                             } catch (error) {
                                 console.error('❌ Error showing debug info:', error);
+                                addOnScreenLog('❌ Error showing debug info: ' + error.message, 'error');
                             }
                         }, 1000);
                         
