@@ -238,6 +238,44 @@
                 // Basic JavaScript test
                 console.log('🚀 JavaScript is starting to load...');
                 
+                // Function to ensure Google sign-in button is always clickable
+                function setupGoogleSignInButton() {
+                    console.log('🔧 Setting up Google sign-in button...');
+                    const googleBtn = document.getElementById('google-signin-button');
+                    
+                    if (googleBtn) {
+                        console.log('✅ Google sign-in button found');
+                        
+                        // Remove any existing event listeners
+                        googleBtn.replaceWith(googleBtn.cloneNode(true));
+                        const newGoogleBtn = document.getElementById('google-signin-button');
+                        
+                        // Add click event listener
+                        newGoogleBtn.addEventListener('click', async (e) => {
+                            console.log('🔑 Google sign-in button clicked');
+                            e.preventDefault();
+                            
+                            try {
+                                // Check if Firebase is initialized
+                                if (auth && typeof window.signInWithGoogle === 'function') {
+                                    console.log('✅ Firebase available, calling signInWithGoogle');
+                                    await window.signInWithGoogle();
+                                } else {
+                                    console.log('❌ Firebase not available, showing error');
+                                    showMessage('Authentication service not configured. Please contact administrator.', 'error');
+                                }
+                            } catch (error) {
+                                console.error('❌ Error in Google sign-in button handler:', error);
+                                showMessage('Authentication error: ' + error.message, 'error');
+                            }
+                        });
+                        
+                        console.log('✅ Google sign-in button event listener set up');
+                    } else {
+                        console.error('❌ Google sign-in button not found');
+                    }
+                }
+                
                 // Persistent logging system
                 const persistentLog = {
                     logs: [],
@@ -323,6 +361,9 @@
                     console.log('🔄 Page load event fired');
                     
                     try {
+                        // Set up Google sign-in button immediately
+                        setupGoogleSignInButton();
+                        
                         setTimeout(() => {
                             try {
                                 showDebugInfo();
@@ -733,6 +774,9 @@
                 // Set up auth listener
                 console.log('🔔 Setting up auth listener...');
                 setupAuthStateListener();
+                
+                // Ensure button is clickable
+                setupGoogleSignInButton();
                         
                         // Check if we're coming back from a redirect
                         const urlParams2 = new URLSearchParams(window.location.search);
@@ -791,14 +835,8 @@
                 showMessage('Authentication service not available. Please check your deployment configuration.', 'error');
                 showUnauthenticatedUI();
                 
-                // Ensure button is still clickable to show error message
-                const googleBtn = document.getElementById('google-signin-button');
-                if (googleBtn) {
-                    googleBtn.addEventListener('click', (e) => {
-                        e.preventDefault();
-                        showMessage('Authentication service not configured. Please contact administrator.', 'error');
-                    });
-                }
+                // Ensure button is still clickable
+                setupGoogleSignInButton();
             }
         });
     </script>
