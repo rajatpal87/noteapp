@@ -241,19 +241,50 @@
                 // Function to ensure Google sign-in button is always clickable
                 function setupGoogleSignInButton() {
                     console.log('🔧 Setting up Google sign-in button...');
-                    const googleBtn = document.getElementById('google-signin-button');
+                    
+                    // Try multiple times with different approaches
+                    const attempts = [
+                        () => document.getElementById('google-signin-button'),
+                        () => document.querySelector('#google-signin-button'),
+                        () => document.querySelector('.google-signin-btn'),
+                        () => document.querySelector('button[class*="google"]')
+                    ];
+                    
+                    let googleBtn = null;
+                    for (let i = 0; i < attempts.length; i++) {
+                        googleBtn = attempts[i]();
+                        if (googleBtn) {
+                            console.log(`✅ Google sign-in button found with method ${i + 1}`);
+                            break;
+                        }
+                    }
                     
                     if (googleBtn) {
-                        console.log('✅ Google sign-in button found');
+                        console.log('🔍 Button details:', {
+                            id: googleBtn.id,
+                            className: googleBtn.className,
+                            disabled: googleBtn.disabled,
+                            style: googleBtn.style.cssText,
+                            computedDisplay: getComputedStyle(googleBtn).display,
+                            computedVisibility: getComputedStyle(googleBtn).visibility,
+                            computedPointerEvents: getComputedStyle(googleBtn).pointerEvents
+                        });
                         
-                        // Remove any existing event listeners
-                        googleBtn.replaceWith(googleBtn.cloneNode(true));
-                        const newGoogleBtn = document.getElementById('google-signin-button');
+                        // Remove any existing event listeners by cloning
+                        const parent = googleBtn.parentNode;
+                        const newBtn = googleBtn.cloneNode(true);
+                        parent.replaceChild(newBtn, googleBtn);
                         
-                        // Add click event listener
-                        newGoogleBtn.addEventListener('click', async (e) => {
-                            console.log('🔑 Google sign-in button clicked');
+                        // Ensure button is not disabled
+                        newBtn.disabled = false;
+                        newBtn.style.pointerEvents = 'auto';
+                        newBtn.style.cursor = 'pointer';
+                        
+                        // Add multiple event listeners to ensure it works
+                        const clickHandler = async (e) => {
+                            console.log('🔑 Google sign-in button clicked!');
                             e.preventDefault();
+                            e.stopPropagation();
                             
                             try {
                                 // Check if Firebase is initialized
@@ -268,12 +299,53 @@
                                 console.error('❌ Error in Google sign-in button handler:', error);
                                 showMessage('Authentication error: ' + error.message, 'error');
                             }
-                        });
+                        };
                         
-                        console.log('✅ Google sign-in button event listener set up');
+                        // Add multiple event types
+                        newBtn.addEventListener('click', clickHandler);
+                        newBtn.addEventListener('mousedown', clickHandler);
+                        newBtn.addEventListener('touchstart', clickHandler);
+                        
+                        // Also add onclick as fallback
+                        newBtn.onclick = clickHandler;
+                        
+                        console.log('✅ Google sign-in button event listeners set up');
+                        
+                        // Test if button is clickable
+                        setTimeout(() => {
+                            const testBtn = document.getElementById('google-signin-button');
+                            if (testBtn) {
+                                console.log('🧪 Button clickability test:', {
+                                    exists: !!testBtn,
+                                    disabled: testBtn.disabled,
+                                    pointerEvents: getComputedStyle(testBtn).pointerEvents,
+                                    cursor: getComputedStyle(testBtn).cursor
+                                });
+                            }
+                        }, 100);
+                        
                     } else {
-                        console.error('❌ Google sign-in button not found');
+                        console.error('❌ Google sign-in button not found with any method');
+                        // Try again after a short delay
+                        setTimeout(() => {
+                            console.log('🔄 Retrying button setup...');
+                            setupGoogleSignInButton();
+                        }, 500);
                     }
+                }
+                
+                // Set up button when DOM is ready (backup)
+                document.addEventListener('DOMContentLoaded', () => {
+                    console.log('📄 DOM Content Loaded event fired');
+                    setupGoogleSignInButton();
+                });
+                
+                // Also try immediately (in case DOM is already loaded)
+                if (document.readyState === 'loading') {
+                    console.log('📄 Document still loading, will wait for DOMContentLoaded');
+                } else {
+                    console.log('📄 Document already loaded, setting up button immediately');
+                    setTimeout(() => setupGoogleSignInButton(), 10);
                 }
                 
                 // Persistent logging system
@@ -361,8 +433,11 @@
                     console.log('🔄 Page load event fired');
                     
                     try {
-                        // Set up Google sign-in button immediately
+                        // Set up Google sign-in button multiple times with different timing
                         setupGoogleSignInButton();
+                        setTimeout(() => setupGoogleSignInButton(), 100);
+                        setTimeout(() => setupGoogleSignInButton(), 500);
+                        setTimeout(() => setupGoogleSignInButton(), 1000);
                         
                         setTimeout(() => {
                             try {
